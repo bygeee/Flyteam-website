@@ -2,6 +2,7 @@
 .vscode/
 .gocache/
 .gomodcache/
+.claude/
 __pycache__/
 .pytest_cache/
 *.py[cod]
@@ -37,6 +38,7 @@ Thumbs.db
 # Local Codex/backups
 *.codex_backup
 *.bak
+*.exe~
 
 # Go build artifacts
 /flyteam-server
