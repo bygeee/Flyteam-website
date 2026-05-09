@@ -282,6 +282,14 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 		s.serveStaticHTML(w, r, "intro.html")
 		return
 	}
+	if path == "/messages" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "messages.html")
+		return
+	}
+	if path == "/groups" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "groups.html")
+		return
+	}
 
 	if !strings.HasPrefix(path, "/api/") {
 		http.NotFound(w, r)

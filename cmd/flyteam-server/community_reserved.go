@@ -73,15 +73,18 @@ var reservedCommunityEndpoints = []ReservedCommunityEndpoint{
 }
 
 func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path string) bool {
+	if s.routeDLCommunityAPI(w, r, path) {
+		return true
+	}
 	if path == "/api/community/status" {
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
 			return true
 		}
 		writeJSON(w, http.StatusOK, map[string]any{
-			"implemented": false,
+			"implemented": true,
 			"docs":        "BLOG_COMMUNITY_ROADMAP.md",
-			"endpoints":   reservedCommunityEndpoints,
+			"endpoints":   communityEndpointsWithStatus(),
 		})
 		return true
 	}
@@ -108,6 +111,49 @@ func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path 
 		return true
 	}
 	return false
+}
+
+var dlImplementedCommunityEndpoints = map[string]bool{
+	http.MethodGet + " /api/blog/articles/{id}/comments":           true,
+	http.MethodPost + " /api/blog/articles/{id}/comments":          true,
+	http.MethodPut + " /api/blog/comments/{id}":                    true,
+	http.MethodDelete + " /api/blog/comments/{id}":                 true,
+	http.MethodPost + " /api/blog/articles/{id}/like":              true,
+	http.MethodDelete + " /api/blog/articles/{id}/like":            true,
+	http.MethodPost + " /api/blog/articles/{id}/favorite":          true,
+	http.MethodDelete + " /api/blog/articles/{id}/favorite":        true,
+	http.MethodPost + " /api/social/follows/{id}":                  true,
+	http.MethodDelete + " /api/social/follows/{id}":                true,
+	http.MethodGet + " /api/social/following/{id}":                 true,
+	http.MethodGet + " /api/social/followers/{id}":                 true,
+	http.MethodGet + " /api/messages/conversations":                true,
+	http.MethodPost + " /api/messages/conversations":               true,
+	http.MethodGet + " /api/messages/conversations/{id}":           true,
+	http.MethodGet + " /api/messages/conversations/{id}/messages":  true,
+	http.MethodPost + " /api/messages/conversations/{id}/messages": true,
+	http.MethodGet + " /api/groups":                                true,
+	http.MethodPost + " /api/groups":                               true,
+	http.MethodGet + " /api/groups/{id}":                           true,
+	http.MethodPut + " /api/groups/{id}":                           true,
+	http.MethodDelete + " /api/groups/{id}":                        true,
+	http.MethodGet + " /api/groups/{id}/members":                   true,
+	http.MethodPost + " /api/groups/{id}/members":                  true,
+	http.MethodDelete + " /api/groups/{id}/members/{user_id}":      true,
+	http.MethodGet + " /api/groups/{id}/messages":                  true,
+	http.MethodPost + " /api/groups/{id}/messages":                 true,
+	http.MethodGet + " /api/notifications":                         true,
+	http.MethodPost + " /api/notifications/{id}/read":              true,
+	http.MethodGet + " /api/search":                                true,
+	http.MethodGet + " /api/blog/recommendations":                  true,
+}
+
+func communityEndpointsWithStatus() []ReservedCommunityEndpoint {
+	out := make([]ReservedCommunityEndpoint, len(reservedCommunityEndpoints))
+	for i, ep := range reservedCommunityEndpoints {
+		ep.Implemented = dlImplementedCommunityEndpoints[ep.Method+" "+ep.Path]
+		out[i] = ep
+	}
+	return out
 }
 
 func apiPatternMatch(pattern, path string) bool {

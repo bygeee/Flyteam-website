@@ -1,0 +1,38 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flyteam 私信</title>
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body class="community-page">
+  <main class="community-shell">
+    <header class="community-top">
+      <div><h1>私信中心</h1><p>登录用户可以创建会话、发送私信并查看未读提醒。</p></div>
+      <nav class="community-nav"><a href="/">首页</a><a href="/groups">群聊</a></nav>
+    </header>
+    <input id="userToken" class="community-token" placeholder="临时调试：粘贴 X-User-Token；后续 grand 登录后会自动写入" />
+    <section class="community-grid" style="margin-top:18px">
+      <aside class="community-card">
+        <h2>会话</h2>
+        <form id="newConversation" class="community-form">
+          <input id="targetUser" placeholder="对方用户 ID" />
+          <button class="community-btn primary" type="submit">创建</button>
+        </form>
+        <div id="conversationList" class="community-list"></div>
+      </aside>
+      <section class="community-card">
+        <h2 id="chatTitle">选择一个会话</h2>
+        <div id="messageBox" class="message-box"></div>
+        <form id="messageForm" class="community-form">
+          <textarea id="messageText" placeholder="输入私信内容，Enter 发送，Shift+Enter 换行"></textarea>
+          <button class="community-btn primary" type="submit">发送</button>
+        </form>
+        <p id="messageStatus" class="community-muted"></p>
+      </section>
+    </section>
+  </main>
+  <script src="/static/messages.js"></script>
+</body>
+</html>

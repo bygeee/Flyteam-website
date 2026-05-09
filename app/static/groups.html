@@ -1,0 +1,39 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flyteam 群聊</title>
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body class="community-page">
+  <main class="community-shell">
+    <header class="community-top">
+      <div><h1>团队群聊</h1><p>创建群、加入公开群并进行站内群聊。</p></div>
+      <nav class="community-nav"><a href="/">首页</a><a href="/messages">私信</a></nav>
+    </header>
+    <input id="userToken" class="community-token" placeholder="临时调试：粘贴 X-User-Token；后续 grand 登录后会自动写入" />
+    <section class="community-grid" style="margin-top:18px">
+      <aside class="community-card">
+        <h2>群列表</h2>
+        <form id="newGroup" class="community-form">
+          <input id="groupName" placeholder="群名称" />
+          <button class="community-btn primary" type="submit">创建</button>
+        </form>
+        <div id="groupList" class="community-list"></div>
+      </aside>
+      <section class="community-card">
+        <h2 id="groupTitle">选择一个群</h2>
+        <button id="joinGroup" class="community-btn">加入群</button>
+        <div id="groupMessages" class="message-box"></div>
+        <form id="groupMessageForm" class="community-form">
+          <textarea id="groupMessageText" placeholder="输入群消息，Enter 发送，Shift+Enter 换行"></textarea>
+          <button class="community-btn primary" type="submit">发送</button>
+        </form>
+        <p id="groupStatus" class="community-muted"></p>
+      </section>
+    </section>
+  </main>
+  <script src="/static/groups.js"></script>
+</body>
+</html>
