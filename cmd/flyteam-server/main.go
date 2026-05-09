@@ -171,7 +171,7 @@ func LoadConfig() (Config, error) {
 		MaxUploadFiles:        atoi("MAX_UPLOAD_FILES", 20),
 		MaxImageUploadBytes:   int64(max(1, maxImgMB)) * 1024 * 1024,
 		MaxPDFUploadBytes:     int64(max(1, maxPDFMB)) * 1024 * 1024,
-		ListenAddr:            ":" + getenv("PORT", "8000"),
+		ListenAddr:            getenv("LISTEN_ADDR", ":"+getenv("PORT", "8000")),
 	}, nil
 }
 
