@@ -27,6 +27,7 @@ type CommunityUser struct {
 func publicCommunityUser(u CommunityUser) map[string]any {
 	return map[string]any{
 		"id":            u.UserID,
+		"user_id":       u.UserID,
 		"user_pk":       u.ID,
 		"nickname":      u.Nickname,
 		"avatar_url":    u.AvatarURL,

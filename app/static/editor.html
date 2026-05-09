@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 文章编辑器</title>
+  <link rel="stylesheet" href="/static/public.css" />
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">Flyteam</a>
+      <nav class="nav">
+        <a href="/blog">博客</a>
+        <a href="/user-login">登录</a>
+        <a href="/user-register">注册</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="community-page editor-page">
+    <section class="community-hero">
+      <p class="sub">CREATOR CENTER</p>
+      <h1>文章编辑器</h1>
+      <p>支持 Markdown、代码块、图片上传、保存草稿和发布文章。</p>
+    </section>
+
+    <section class="editor-layout">
+      <form id="editorForm" class="editor-form">
+        <input id="articleTitle" placeholder="文章标题" required />
+        <textarea id="articleSummary" rows="3" placeholder="文章摘要"></textarea>
+        <input id="articleCover" placeholder="封面图 URL，可留空" />
+        <div class="editor-row">
+          <input id="articleCategory" placeholder="分类，例如 技术" />
+          <input id="articleTags" placeholder="标签，用逗号分隔，例如 Go,Flyteam" />
+        </div>
+        <div class="editor-toolbar">
+          <label class="community-button editor-upload">
+            上传图片
+            <input id="articleImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp" />
+          </label>
+          <button type="button" id="insertCode" class="community-button secondary">插入代码块</button>
+          <button type="button" id="saveDraft" class="community-button secondary">保存草稿</button>
+          <button type="submit" class="community-button">发布文章</button>
+        </div>
+        <textarea id="articleContent" class="markdown-input" rows="22" placeholder="在这里编写 Markdown 正文" required></textarea>
+        <p id="editorMsg" class="community-muted"></p>
+      </form>
+
+      <aside class="editor-preview">
+        <h2>实时预览</h2>
+        <div id="previewRoot" class="article-body"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="/static/editor.js"></script>
+</body>
+</html>

@@ -238,6 +238,22 @@ func (s *Server) handleUploadPDF(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"saved_files": names, "added_chunks": added})
 }
 
+func (s *Server) handleUploadBlogImages(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireCommunityUser(w, r); !ok {
+		return
+	}
+	urls, _, err := saveUploadedFiles(r, s.cfg.BlogUploadDir, "/uploads/blog", imageSuffixes, s.cfg.MaxImageUploadBytes, "image", s.cfg.MaxUploadFiles)
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+	if len(urls) == 0 {
+		writeError(w, 400, "No valid image files uploaded.")
+		return
+	}
+	writeJSON(w, 200, map[string]any{"saved_images": urls})
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a

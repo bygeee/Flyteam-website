@@ -76,6 +76,64 @@ func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path 
 	if s.routeDLCommunityAPI(w, r, path) {
 		return true
 	}
+	if path == "/api/upload/blog/images" && r.Method == http.MethodPost {
+		s.handleUploadBlogImages(w, r)
+		return true
+	}
+	if path == "/api/users/register" && r.Method == http.MethodPost {
+		s.handleCommunityRegister(w, r)
+		return true
+	}
+	if path == "/api/users/login" && r.Method == http.MethodPost {
+		s.handleCommunityLogin(w, r)
+		return true
+	}
+	if path == "/api/users/logout" && r.Method == http.MethodPost {
+		s.handleCommunityLogout(w, r)
+		return true
+	}
+	if path == "/api/users/me" && r.Method == http.MethodGet {
+		s.handleCommunityMe(w, r)
+		return true
+	}
+	if strings.HasPrefix(path, "/api/users/") {
+		id := pathValue(path, "/api/users/")
+		switch r.Method {
+		case http.MethodGet:
+			s.handleGetCommunityUser(w, r, id)
+		case http.MethodPut:
+			s.handleUpdateCommunityUser(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
+		}
+		return true
+	}
+	if path == "/api/blog/articles" {
+		s.handleBlogArticles(w, r)
+		return true
+	}
+	if strings.HasPrefix(path, "/api/blog/articles/") && strings.HasSuffix(path, "/publish") && r.Method == http.MethodPost {
+		s.handlePublishBlogArticle(w, r, blogArticleIDFromPath(path))
+		return true
+	}
+	if strings.HasPrefix(path, "/api/blog/articles/") && strings.HasSuffix(path, "/view") && r.Method == http.MethodPost {
+		s.handleViewBlogArticle(w, r, blogArticleIDFromPath(path))
+		return true
+	}
+	if strings.HasPrefix(path, "/api/blog/articles/") {
+		id := blogArticleIDFromPath(path)
+		switch r.Method {
+		case http.MethodGet:
+			s.handleGetBlogArticle(w, r, id)
+		case http.MethodPut:
+			s.handleUpdateBlogArticle(w, r, id)
+		case http.MethodDelete:
+			s.handleDeleteBlogArticle(w, r, id)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
+		}
+		return true
+	}
 	if path == "/api/community/status" {
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
@@ -114,6 +172,20 @@ func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path 
 }
 
 var dlImplementedCommunityEndpoints = map[string]bool{
+	http.MethodPost + " /api/users/register":                       true,
+	http.MethodPost + " /api/users/login":                          true,
+	http.MethodPost + " /api/users/logout":                         true,
+	http.MethodGet + " /api/users/me":                              true,
+	http.MethodGet + " /api/users/{id}":                            true,
+	http.MethodPut + " /api/users/{id}":                            true,
+	http.MethodGet + " /api/blog/articles":                         true,
+	http.MethodPost + " /api/blog/articles":                        true,
+	http.MethodGet + " /api/blog/articles/{id}":                    true,
+	http.MethodPut + " /api/blog/articles/{id}":                    true,
+	http.MethodDelete + " /api/blog/articles/{id}":                 true,
+	http.MethodPost + " /api/blog/articles/{id}/publish":           true,
+	http.MethodPost + " /api/blog/articles/{id}/view":              true,
+	http.MethodPost + " /api/upload/blog/images":                   true,
 	http.MethodGet + " /api/blog/articles/{id}/comments":           true,
 	http.MethodPost + " /api/blog/articles/{id}/comments":          true,
 	http.MethodPut + " /api/blog/comments/{id}":                    true,
