@@ -1,8 +1,8 @@
-﻿# 协作开发说明
+# 协作开发说明
 
 本项目采用：**别人 Fork 仓库 -> 提 Pull Request -> 负责人审核 -> 合并**。
 
-这样成员不会直接改坏主仓库，所有改动都需要经过你审核。
+这样成员不会直接改坏主仓库，所有改动都需要经过负责人审核。
 
 ## 仓库地址
 
@@ -20,28 +20,22 @@ https://github.com/z3ghxxx/Flyteam-website.git
 
 ### 1. 成员先 Fork 仓库
 
-让成员打开：
+打开：
 
 ```text
 https://github.com/z3ghxxx/Flyteam-website
 ```
 
-点击右上角：
+点击右上角 `Fork`，生成自己账号下的副本。
 
-```text
-Fork
-```
-
-这样他的账号下面会生成一个自己的副本。
-
-### 2. 成员 Clone 自己 Fork 后的仓库
+### 2. Clone 自己 Fork 后的仓库
 
 ```bash
 git clone git@github.com:成员用户名/Flyteam-website.git
 cd Flyteam-website
 ```
 
-### 3. 添加你的原仓库为 upstream
+### 3. 添加原仓库为 upstream
 
 ```bash
 git remote add upstream git@github.com:z3ghxxx/Flyteam-website.git
@@ -92,17 +86,7 @@ compare branch: feature/功能名
 
 ### 8. 负责人审核
 
-你在 GitHub 的 Pull Requests 页面查看：
-
-```text
-Files changed
-```
-
-确认没问题后点击：
-
-```text
-Merge pull request
-```
+在 GitHub 的 Pull Requests 页面查看 `Files changed`，确认没问题后点击 `Merge pull request`。
 
 如果有问题，直接在 PR 页面评论，让成员继续修改。
 
@@ -113,47 +97,59 @@ Merge pull request
 - `fix/xxx`：问题修复分支，例如 `fix/upload-check`。
 - `docs/xxx`：文档分支，例如 `docs/deploy-guide`。
 
+## 本地运行
+
+本项目后端已整体迁移为 Go，前端仍然是 `app/static/` 下的静态页面。
+
+```bash
+go version
+cp .env.example .env
+go run ./cmd/flyteam-server
+```
+
+Windows PowerShell：
+
+```powershell
+Copy-Item .env.example .env
+$env:PORT=8000
+go run ./cmd/flyteam-server
+```
+
+浏览器访问：
+
+```text
+http://127.0.0.1:8000
+```
+
 ## 提交前检查
 
 修改后建议至少运行：
 
 ```bash
-python -m py_compile app/main.py
+gofmt -w cmd/flyteam-server
+go test ./...
+go build ./cmd/flyteam-server
 node --check app/static/public.js
 node --check app/static/news.js
 node --check app/static/app.js
 ```
 
-如果改了后端接口，建议本地启动测试：
+如果只改了前端页面，也建议本地启动网站手动检查对应页面和管理员后台。
+
+## RAG / 知识库说明
+
+RAG 已改为纯 Go 实现：
+
+- 后端直接调用 DashScope/OpenAI-compatible `/embeddings` 和 `/chat/completions`；
+- 索引文件为运行时数据 `storage/rag_index_go.json`，不要提交；
+- PDF 上传后由后台触发入库；
+- VPS 上建议安装 `poppler-utils`，Go 后端会优先调用 `pdftotext` 提升中文 PDF 提取效果。
+
+Ubuntu：
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-## 本地运行
-
-```bash
-python -m venv .venv
-```
-
-Windows：
-
-```bash
-.\.venv\Scripts\activate
-```
-
-Linux/macOS：
-
-```bash
-source .venv/bin/activate
-```
-
-安装依赖并启动：
-
-```bash
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+apt update
+apt install -y poppler-utils
 ```
 
 ## 不要提交的内容
@@ -161,11 +157,12 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 以下内容已经在 `.gitignore` 中排除：
 
 - `.env` 密钥配置
-- `.venv` 虚拟环境
+- 本地虚拟环境 / 编辑器配置
 - `storage/uploads` 上传图片缓存
-- `storage/chroma` 向量库
-- `storage/*.json` 运行数据、报名信息、管理员数据
+- `storage/chroma` 旧版向量库缓存
+- `storage/*.json` 运行数据、报名信息、管理员数据、Go RAG 索引
 - 日志文件
 - 本地 PDF 资料
+- Go 编译产物 `flyteam-server` / `flyteam-server.exe`
 
 如果确实需要提交示例数据，请先脱敏并单独说明。

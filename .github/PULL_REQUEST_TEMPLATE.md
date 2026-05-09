@@ -30,7 +30,8 @@
 可选命令：
 
 ```bash
-python -m py_compile app/main.py
+go test ./...
+go build ./cmd/flyteam-server
 node --check app/static/public.js
 node --check app/static/news.js
 node --check app/static/app.js
