@@ -8,7 +8,7 @@
 
 - 后端：Go
 - 前端：原静态 HTML / CSS / JS 页面保持不变
-- 数据：`storage/*.json`
+- 数据：SQLite `storage/flyteam.db`，并兼容旧版 `storage/*.json` 自动迁移
 - 上传文件：`storage/uploads/`
 - RAG：Go 后端直接调用 DashScope/OpenAI-compatible Embeddings + Chat API
 
@@ -97,8 +97,27 @@ RETRIEVAL_MIN_RELEVANCE=0.2
 ADMIN_TOKEN=change_me_admin_token
 ADMIN_PASSWORD=change_me_admin_password
 ADMIN_COOKIE_SECURE=0
+DATABASE_FILE=storage/flyteam.db
 PORT=8000
 ```
+
+## 数据库存储说明
+
+后端已接入 SQLite，默认数据库文件：
+
+```text
+storage/flyteam.db
+```
+
+当前 z3 基础层负责保证原有功能不变，并把以下运行数据逐步兼容到数据库：
+
+- 管理员账号和密码哈希
+- 官网内容快照：新闻、回顾、奖项、前辈墙、首页图片等
+- 招新报名信息
+- RAG 索引快照
+- 后续普通用户、文章、评论、关注、私信、群聊、通知等社区数据表
+
+旧的 `storage/*.json` 不会被删除；首次运行时如果数据库为空，会优先读取旧 JSON 并写入数据库，方便之后结合 VPS 缓存做迁移。
 
 ## PDF 文字提取说明
 
@@ -120,6 +139,7 @@ apt install -y poppler-utils
 storage/uploads/
 storage/chroma/   # 旧版向量库缓存（如存在）
 storage/*.json
+storage/*.db
 storage/*.log
 storage/rag_index_go.json
 *.pdf

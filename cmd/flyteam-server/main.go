@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -29,6 +30,7 @@ type Config struct {
 	SeniorUploadDir       string
 	ReviewUploadDir       string
 	NewsUploadDir         string
+	DatabaseFile          string
 	RagIndexFile          string
 	TeamContentFile       string
 	RecruitContentFile    string
@@ -54,6 +56,7 @@ type Config struct {
 type Server struct {
 	cfg       Config
 	rag       *RagService
+	db        *sql.DB
 	sessions  map[string]AdminSession
 	sessMu    sync.Mutex
 	rate      map[string][]time.Time
@@ -67,15 +70,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, filepath.Dir(cfg.RagIndexFile)} {
+	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, filepath.Dir(cfg.RagIndexFile), filepath.Dir(cfg.DatabaseFile)} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Fatalf("mkdir %s: %v", dir, err)
 		}
 	}
-	rag := NewRagService(cfg)
+	db, err := openDatabase(cfg)
+	if err != nil {
+		log.Fatalf("database init failed: %v", err)
+	}
+	defer db.Close()
+	rag := NewRagService(cfg, db)
 	s := &Server{
 		cfg:      cfg,
 		rag:      rag,
+		db:       db,
 		sessions: map[string]AdminSession{},
 		rate:     map[string][]time.Time{},
 		captchas: map[string]CaptchaEntry{},
@@ -136,6 +145,7 @@ func LoadConfig() (Config, error) {
 		SeniorUploadDir:       filepath.Join(upload, "seniors"),
 		ReviewUploadDir:       filepath.Join(upload, "review"),
 		NewsUploadDir:         filepath.Join(upload, "news"),
+		DatabaseFile:          getenv("DATABASE_FILE", filepath.Join(storage, "flyteam.db")),
 		RagIndexFile:          filepath.Join(storage, "rag_index_go.json"),
 		TeamContentFile:       filepath.Join(storage, "team_content.json"),
 		RecruitContentFile:    filepath.Join(storage, "recruit_applications.json"),

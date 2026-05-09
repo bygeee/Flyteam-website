@@ -216,13 +216,16 @@ func awardLevelRank(item M) int {
 
 func (s *Server) loadTeamContent() M {
 	empty := M{"awards": []any{}, "gallery": []any{}, "seniors": []any{}, "news": []any{}, "review_images": []any{}, "review_albums": []any{}, "team_intro": "", "team_overview": ""}
-	b, err := os.ReadFile(s.cfg.TeamContentFile)
-	if err != nil {
-		return empty
-	}
 	var data M
-	if json.Unmarshal(b, &data) != nil || data == nil {
-		return empty
+	fromDB := s.loadJSONFromDB("team_content", &data) && data != nil
+	if !fromDB {
+		b, err := os.ReadFile(s.cfg.TeamContentFile)
+		if err != nil {
+			return empty
+		}
+		if json.Unmarshal(b, &data) != nil || data == nil {
+			return empty
+		}
 	}
 	for k, v := range empty {
 		if _, ok := data[k]; !ok {
@@ -342,10 +345,19 @@ func (s *Server) loadTeamContent() M {
 	}
 	sort.SliceStable(news, func(i, j int) bool { return recordLess(asMap(news[i]), asMap(news[j]), []string{"date", "created_at"}) })
 	data["news"] = news
+	if !fromDB && s.db != nil {
+		_ = s.saveJSONToDB("team_content", data)
+	}
 	return data
 }
 
-func (s *Server) saveTeamContent(data M) { _ = writeJSONAtomic(s.cfg.TeamContentFile, data) }
+func (s *Server) saveTeamContent(data M) {
+	if s.db != nil {
+		_ = s.saveJSONToDB("team_content", data)
+		return
+	}
+	_ = writeJSONAtomic(s.cfg.TeamContentFile, data)
+}
 
 func firstNonNil(vals ...any) any {
 	for _, v := range vals {

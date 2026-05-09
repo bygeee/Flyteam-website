@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -83,11 +84,10 @@ func publicSession(s AdminSession) PublicAdmin {
 }
 
 func (s *Server) loadAdminUsers() (AdminStore, error) {
-	var store AdminStore
-	b, err := os.ReadFile(s.cfg.AdminUsersFile)
-	if err == nil && len(b) > 0 {
-		_ = json.Unmarshal(b, &store)
+	if s.db != nil {
+		return s.loadAdminUsersDB()
 	}
+	store := s.loadAdminUsersFromJSON()
 	out := AdminStore{Users: []AdminUser{}}
 	for _, u := range store.Users {
 		u.Username = strings.TrimSpace(u.Username)
@@ -122,10 +122,102 @@ func (s *Server) loadAdminUsers() (AdminStore, error) {
 }
 
 func (s *Server) saveAdminUsers(store AdminStore) error {
+	if s.db != nil {
+		return s.saveAdminUsersDB(store)
+	}
 	for i := range store.Users {
 		store.Users[i].Role = normalizeRole(store.Users[i].Role)
 	}
 	return writeJSONAtomic(s.cfg.AdminUsersFile, store)
+}
+
+func (s *Server) loadAdminUsersFromJSON() AdminStore {
+	var store AdminStore
+	b, err := os.ReadFile(s.cfg.AdminUsersFile)
+	if err == nil && len(b) > 0 {
+		_ = json.Unmarshal(b, &store)
+	}
+	return store
+}
+
+func (s *Server) loadAdminUsersDB() (AdminStore, error) {
+	var count int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM admin_users`).Scan(&count)
+	if count == 0 {
+		legacy := s.loadAdminUsersFromJSON()
+		if len(legacy.Users) > 0 {
+			_ = s.saveAdminUsersDB(legacy)
+		}
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM admin_users`).Scan(&count)
+	}
+	if count == 0 {
+		pass := s.cfg.AdminPassword
+		if pass == "" {
+			pass = s.cfg.AdminToken
+		}
+		if pass == "" {
+			pass = "admin123456"
+		}
+		salt, hash := hashPassword(pass, "")
+		u := AdminUser{ID: randomHex(6), Username: "admin", DisplayName: "System Admin", Role: "admin", Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}
+		if err := s.saveAdminUsersDB(AdminStore{Users: []AdminUser{u}}); err != nil {
+			return AdminStore{}, err
+		}
+	}
+	rows, err := s.db.Query(`SELECT id, username, COALESCE(display_name,''), role, salt, password_hash, created_at, COALESCE(last_login_at,'') FROM admin_users ORDER BY created_at ASC, username ASC`)
+	if err != nil {
+		return AdminStore{}, err
+	}
+	defer rows.Close()
+	out := AdminStore{Users: []AdminUser{}}
+	for rows.Next() {
+		var u AdminUser
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Role, &u.Salt, &u.PasswordHash, &u.CreatedAt, &u.LastLoginAt); err != nil {
+			return out, err
+		}
+		u.Username = strings.TrimSpace(u.Username)
+		u.Role = normalizeRole(u.Role)
+		if u.ID == "" || u.Username == "" || u.Salt == "" || u.PasswordHash == "" {
+			continue
+		}
+		out.Users = append(out.Users, u)
+	}
+	return out, rows.Err()
+}
+
+func (s *Server) saveAdminUsersDB(store AdminStore) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM admin_users`); err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`INSERT INTO admin_users(id, username, display_name, role, salt, password_hash, created_at, last_login_at) VALUES(?,?,?,?,?,?,?,?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, u := range store.Users {
+		u.Username = strings.TrimSpace(u.Username)
+		u.Salt = strings.TrimSpace(u.Salt)
+		u.PasswordHash = strings.TrimSpace(u.PasswordHash)
+		if u.Username == "" || u.Salt == "" || u.PasswordHash == "" {
+			continue
+		}
+		if u.ID == "" {
+			u.ID = randomHex(6)
+		}
+		if u.CreatedAt == "" {
+			u.CreatedAt = nowISO()
+		}
+		lastLogin := sql.NullString{String: strings.TrimSpace(u.LastLoginAt), Valid: strings.TrimSpace(u.LastLoginAt) != ""}
+		if _, err := stmt.Exec(u.ID, u.Username, strings.TrimSpace(u.DisplayName), normalizeRole(u.Role), u.Salt, u.PasswordHash, u.CreatedAt, lastLogin); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func findAdmin(store AdminStore, username string) *AdminUser {
