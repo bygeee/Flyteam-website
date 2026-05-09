@@ -1,6 +1,74 @@
-<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Flyteam 文章详情</title><link rel="stylesheet" href="/static/public.css"/><link rel="stylesheet" href="/static/community.css"/></head>
-<body class="community-page"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/">Flyteam</a><nav class="nav"><a href="/">首页</a><a href="/blog">博客</a><a href="/editor">写文章</a><a href="/user-login">登录</a></nav></div></header>
-<main class="community-shell narrow"><article class="community-card article-detail"><p><a class="community-link" href="/blog">← 返回博客广场</a></p><div id="articleRoot"><p class="community-muted">正在加载文章...</p></div><div class="article-actions"><button id="articleLikeBtn" class="community-btn" type="button">点赞</button><button id="articleFavoriteBtn" class="community-btn" type="button">收藏</button><a id="articleAuthorLink" class="community-btn" href="/blog">作者主页</a><span id="articleInteractionTip" class="community-muted"></span></div></article>
-<section class="community-card comment-panel"><div class="community-panel-head"><div><h2>评论 <span id="articleCommentCount">0</span></h2><p>登录后可以参与讨论。Ctrl/⌘ + Enter 快速发送。</p></div></div><div id="articleComments" class="comment-list"><p class="community-muted">正在加载评论...</p></div><div class="community-form comment-form"><textarea id="articleCommentInput" placeholder="写下你的评论"></textarea><button id="articleCommentSubmit" class="community-btn primary" type="button">发表评论</button></div></section></main><script src="/static/article.js"></script></body></html>
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 文章详情</title>
+  <link rel="stylesheet" href="/static/public.css" />
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body class="campus-article-page">
+  <header class="campus-blog-nav article-nav">
+    <a class="campus-blog-brand" href="/"><span>Fly</span>team</a>
+    <nav>
+      <a href="/blog">博客广场</a>
+      <a href="/editor">写文章</a>
+      <a href="/messages">私信</a>
+      <a href="/account">个人中心</a>
+    </nav>
+  </header>
+
+  <main class="campus-article-shell">
+    <a class="article-back" href="/blog">← 返回博客广场</a>
+    <section id="articleHero" class="campus-article-hero">
+      <p class="campus-pill">ARTICLE</p>
+      <h1>正在加载文章...</h1>
+      <p>Flyteam Campus Blog</p>
+    </section>
+
+    <section class="campus-reader-grid">
+      <aside class="reader-side reader-left">
+        <div class="reader-sticky-card">
+          <p class="campus-panel-kicker">AUTHOR</p>
+          <div id="articleAuthorCard" class="article-author-card">加载中...</div>
+          <div class="article-actions">
+            <button id="articleLikeBtn" class="campus-secondary" type="button">点赞</button>
+            <button id="articleFavoriteBtn" class="campus-secondary" type="button">收藏</button>
+            <a id="articleAuthorLink" class="campus-secondary" href="/blog">作者主页</a>
+          </div>
+          <p id="articleInteractionTip" class="reader-tip"></p>
+        </div>
+      </aside>
+
+      <article id="articleRoot" class="campus-reader-card">
+        <p class="reader-tip">正在加载文章内容...</p>
+      </article>
+
+      <aside class="reader-side reader-right">
+        <div class="reader-sticky-card">
+          <p class="campus-panel-kicker">ON THIS PAGE</p>
+          <h2>目录</h2>
+          <div id="articleToc" class="article-toc"><span>加载后生成</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="campus-comment-panel">
+      <div class="campus-section-head">
+        <div>
+          <p class="campus-panel-kicker">DISCUSSION</p>
+          <h2>评论讨论 <span id="articleCommentCount">0</span></h2>
+          <p>登录后可以参与讨论。Ctrl / ⌘ + Enter 快速发送。</p>
+        </div>
+      </div>
+      <div id="articleComments" class="campus-comment-list"><p class="reader-tip">正在加载评论...</p></div>
+      <div class="campus-comment-form">
+        <textarea id="articleCommentInput" placeholder="写下你的评论、补充或疑问"></textarea>
+        <button id="articleCommentSubmit" class="campus-primary" type="button">发表评论</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/article.js"></script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"regexp"
@@ -98,39 +99,64 @@ func (s *Server) findCommunityLoginUser(userID string) (CommunityUser, string, s
 }
 
 func (s *Server) handleCommunityRegister(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		writeError(w, http.StatusServiceUnavailable, "Database unavailable.")
+		return
+	}
+	registerKey := "user-register:" + clientIP(r)
+	if !s.checkRateLimit(registerKey, 6, time.Hour, false) {
+		writeError(w, http.StatusTooManyRequests, "Too many registration attempts. Please try again later.")
+		return
+	}
 	var req CommunityRegisterRequest
 	if err := decodeJSON(r, &req); err != nil {
+		s.checkRateLimit(registerKey, 6, time.Hour, true)
 		writeError(w, http.StatusBadRequest, "Invalid JSON.")
 		return
 	}
 	nickname, err := validateCommunityNickname(req.Nickname)
 	if err != nil {
+		s.checkRateLimit(registerKey, 6, time.Hour, true)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	userID, err := validateCommunityUserID(req.UserID)
 	if err != nil {
+		s.checkRateLimit(registerKey, 6, time.Hour, true)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if err := validateCommunityPassword(req.Password); err != nil {
+		s.checkRateLimit(registerKey, 6, time.Hour, true)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	var exists int
-	_ = s.db.QueryRow(`SELECT COUNT(*) FROM community_users WHERE user_id=?`, userID).Scan(&exists)
-	if exists > 0 {
-		writeError(w, http.StatusConflict, "User ID already exists.")
+	s.checkRateLimit(registerKey, 6, time.Hour, true)
+	var existingID, existingStatus string
+	err = s.db.QueryRow(`SELECT id, status FROM community_users WHERE user_id=?`, userID).Scan(&existingID, &existingStatus)
+	if err == nil {
+		switch strings.ToLower(strings.TrimSpace(existingStatus)) {
+		case "pending":
+			writeError(w, http.StatusConflict, "\u8be5\u8d26\u53f7\u6ce8\u518c\u7533\u8bf7\u6b63\u5728\u7b49\u5f85\u7ba1\u7406\u5458\u5ba1\u6838\u3002")
+			return
+		case "rejected":
+			_, _ = s.db.Exec(`DELETE FROM community_users WHERE id=? AND status='rejected'`, existingID)
+		default:
+			writeError(w, http.StatusConflict, "User ID already exists.")
+			return
+		}
+	} else if err != nil && err != sql.ErrNoRows {
+		writeError(w, http.StatusInternalServerError, "Failed to check user ID.")
 		return
 	}
 	salt, hash := hashPassword(req.Password, "")
-	u := CommunityUser{ID: randomHex(6), UserID: userID, Nickname: nickname, Role: "user", Status: "active", CreatedAt: nowISO()}
+	u := CommunityUser{ID: randomHex(6), UserID: userID, Nickname: nickname, Role: "user", Status: "pending", CreatedAt: nowISO()}
 	_, err = s.db.Exec(`INSERT INTO community_users(id, user_id, nickname, password_hash, salt, role, status, created_at) VALUES(?,?,?,?,?,?,?,?)`, u.ID, u.UserID, u.Nickname, hash, salt, u.Role, u.Status, u.CreatedAt)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to save user.")
+		writeError(w, http.StatusInternalServerError, "Failed to save registration application.")
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"user": publicCommunityUser(u)})
+	writeJSON(w, http.StatusAccepted, map[string]any{"ok": true, "status": "pending", "message": "\u6ce8\u518c\u7533\u8bf7\u5df2\u63d0\u4ea4\uff0c\u8bf7\u7b49\u5f85\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458\u6216\u8d85\u7ea7\u7ba1\u7406\u5458\u5ba1\u6838\u901a\u8fc7\u540e\u518d\u767b\u5f55\u3002", "user": publicCommunityUser(u)})
 }
 
 func (s *Server) handleCommunityLogin(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +181,14 @@ func (s *Server) handleCommunityLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "Invalid user ID or password.")
 		return
 	}
-	if u.Status == "banned" || u.Status == "deleted" {
+	switch strings.ToLower(strings.TrimSpace(u.Status)) {
+	case "pending":
+		writeError(w, http.StatusForbidden, "\u4f60\u7684\u6ce8\u518c\u7533\u8bf7\u6b63\u5728\u7b49\u5f85\u7ba1\u7406\u5458\u5ba1\u6838\uff0c\u901a\u8fc7\u540e\u624d\u80fd\u767b\u5f55\u3002")
+		return
+	case "rejected":
+		writeError(w, http.StatusForbidden, "\u4f60\u7684\u6ce8\u518c\u7533\u8bf7\u5df2\u88ab\u9a73\u56de\uff0c\u8bf7\u91cd\u65b0\u6ce8\u518c\u3002")
+		return
+	case "banned", "deleted":
 		writeError(w, http.StatusForbidden, "User account is not active.")
 		return
 	}

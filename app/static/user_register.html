@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flyteam 用户注册</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=community-ui-20260510b" />
 </head>
 <body class="login-page">
   <main class="login-card">
     <h1>Flyteam 用户注册</h1>
-    <p>创建普通用户账号。用户 ID 只能包含字母、数字、下划线和短横线。</p>
+    <p>提交注册申请后需等待博客站管理员或超级管理员审核。用户 ID 只能包含字母、数字、下划线和短横线。</p>
     <form id="userRegisterForm">
       <input id="nickname" autocomplete="nickname" placeholder="昵称" required />
       <input id="userId" autocomplete="username" placeholder="用户 ID，例如 grand" required />
       <input id="password" type="password" autocomplete="new-password" placeholder="密码，至少 8 位" required />
       <div class="login-row">
         <a class="back-link" href="/user-login">已有账号，去登录</a>
-        <button type="submit">注册</button>
+        <button type="submit">提交审核</button>
       </div>
     </form>
     <div id="userRegisterMsg" class="login-msg"></div>
@@ -24,3 +24,4 @@
   <script src="/static/user_register.js"></script>
 </body>
 </html>
+

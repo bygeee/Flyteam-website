@@ -1,4 +1,4 @@
-﻿const { createApp } = Vue;
+const { createApp } = Vue;
 
 const CURRENT_YEAR = new Date().getFullYear();
 const SPECIAL_SENIOR_GRADE = "帮主";
@@ -31,7 +31,10 @@ createApp({
         { key: "awards", label: "奖项展示", desc: "新增/删除奖项，统一对外展示" },
         { key: "seniors", label: "前辈墙", desc: "展示学长学姐风采，支持照片管理" },
         { key: "recruit", label: "报名管理", desc: "查看、搜索、删除报名信息，也可手动补录" },
-        { key: "admins", label: "Admin", desc: "Admin login and user management" },
+        { key: "communityUsers", label: "用户管理", desc: "管理博客注册用户、禁言/封禁/重置密码" },
+        { key: "superAudit", label: "超级审计", desc: "仅超级管理员可查阅全站私信与群聊记录" },
+        { key: "blogSite", label: "\u535a\u5ba2\u5f00\u5173", desc: "\u8d85\u7ea7\u7ba1\u7406\u5458\u63a7\u5236\u535a\u5ba2\u7ad9\u5bf9\u5916\u5f00\u653e\u72b6\u6001" },
+        { key: "admins", label: "管理员账号", desc: "超级管理员维护后台管理员与超级管理员账号" },
         { key: "knowledge", label: "知识库", desc: "PDF 入库与重建，服务问答系统" },
       ],
       activeFeature: "overview",
@@ -53,9 +56,57 @@ createApp({
         username: "",
         display_name: "",
         password: "",
-        role: "admin",
+        role: "site_admin",
       },
-      adminUserText: "登录后可添加、删除或重置管理员用户。",
+      adminUserRoleOptions: [
+        { value: "site_admin", label: "\u5ba3\u4f20\u7ad9\u7ba1\u7406\u5458" },
+        { value: "blog_admin", label: "\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458" },
+      ],
+      adminUserListRoleOptions: [
+        { value: "site_admin", label: "\u5ba3\u4f20\u7ad9\u7ba1\u7406\u5458" },
+        { value: "blog_admin", label: "\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458" },
+        { value: "superadmin", label: "\u8d85\u7ea7\u7ba1\u7406\u5458" },
+      ],
+      adminUserText: "\u8d85\u7ea7\u7ba1\u7406\u5458\u53ef\u5206\u522b\u6dfb\u52a0\u5ba3\u4f20\u7ad9\u7ba1\u7406\u5458\u3001\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458\uff1b\u8d85\u7ea7\u7ba1\u7406\u5458\u8d26\u53f7\u5168\u7ad9\u552f\u4e00\u3002",
+
+      communityUsers: [],
+      communityUserKeyword: "",
+      communityUserTotal: 0,
+      communityUserText: "\u65b0\u4eba\u6ce8\u518c\u9700\u8981\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458\u6216\u8d85\u7ea7\u7ba1\u7406\u5458\u5ba1\u6838\uff1b\u901a\u8fc7\u540e\u624d\u80fd\u767b\u5f55\u3002",
+      blogSiteState: {
+        open: true,
+        notice: "\u535a\u5ba2\u7ad9\u6682\u4e0d\u5bf9\u5916\u5f00\u653e\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
+        updated_at: "",
+        updated_by: "",
+      },
+      blogSiteStateText: "\u8d85\u7ea7\u7ba1\u7406\u5458\u53ef\u4ee5\u4e34\u65f6\u5173\u95ed\u535a\u5ba2\u7ad9\u5bf9\u5916\u8bbf\u95ee\uff0c\u6570\u636e\u5e93\u3001\u6587\u7ae0\u3001\u56fe\u7247\u548c\u804a\u5929\u7f13\u5b58\u4e0d\u4f1a\u88ab\u5220\u9664\u3002",
+      communityUserForm: {
+        user_id: "",
+        nickname: "",
+        password: "",
+        role: "user",
+        status: "active",
+      },
+      communityRoleOptions: [
+        { value: "user", label: "普通用户" },
+        { value: "moderator", label: "社区协管" },
+      ],
+      communityPrivilegedRoleOptions: [
+        { value: "user", label: "普通用户" },
+        { value: "moderator", label: "社区协管" },
+        { value: "admin", label: "管理员" },
+        { value: "superadmin", label: "超级管理员" },
+      ],
+      communityStatusOptions: [
+        { value: "active", label: "正常" },
+        { value: "muted", label: "禁言" },
+        { value: "banned", label: "封禁" },
+      ],
+      auditConversations: [],
+      auditGroups: [],
+      auditMessages: [],
+      auditTarget: null,
+      auditText: "超级管理员可在这里查看全站私信与群聊记录；普通管理员不会显示该入口。",
 
       heroImages: [],
       currentSlide: 0,
@@ -207,8 +258,25 @@ createApp({
     isSuperAdmin() {
       return !!(this.currentAdmin && this.currentAdmin.role === "superadmin");
     },
+    isSiteAdmin() {
+      return !!(this.currentAdmin && ["site_admin", "superadmin"].includes(this.currentAdmin.role));
+    },
+    isBlogAdmin() {
+      return !!(this.currentAdmin && ["blog_admin", "superadmin"].includes(this.currentAdmin.role));
+    },
+    siteFeatureKeys() {
+      return ["overview", "gallery", "news", "review", "intro", "awards", "seniors", "recruit", "knowledge"];
+    },
     visibleFeatureTabs() {
-      return this.featureTabs.filter((item) => item.key !== "admins" || this.isSuperAdmin);
+      return this.featureTabs.filter((item) => {
+        if (item.key === "admins" || item.key === "superAudit" || item.key === "blogSite") return this.isSuperAdmin;
+        if (item.key === "communityUsers") return this.isBlogAdmin;
+        if (this.siteFeatureKeys.includes(item.key)) return this.isSiteAdmin;
+        return true;
+      });
+    },
+    communityRoleSelectOptions() {
+      return this.isSuperAdmin ? this.communityPrivilegedRoleOptions : this.communityRoleOptions;
     },
   },
   mounted() {
@@ -245,6 +313,12 @@ createApp({
       this.adminLastActiveAt = 0;
       this.currentAdmin = null;
       this.adminUsers = [];
+      this.communityUsers = [];
+      this.communityUserTotal = 0;
+      this.auditConversations = [];
+      this.auditGroups = [];
+      this.auditMessages = [];
+      this.auditTarget = null;
       localStorage.removeItem(this.getAdminTokenKey());
       localStorage.removeItem(this.getAdminLastActiveKey());
       sessionStorage.removeItem(this.getAdminCsrfKey());
@@ -262,7 +336,13 @@ createApp({
       } else {
         await this.tryAdminPing();
       }
-      await Promise.all([this.loadContent(), this.refreshStatus(), this.isAdmin ? this.fetchRecruitList() : Promise.resolve()]);
+      await Promise.all([
+        this.loadContent(),
+        this.refreshStatus(),
+        this.isSiteAdmin ? this.fetchRecruitList() : Promise.resolve(),
+        this.isBlogAdmin ? this.fetchCommunityUsers() : Promise.resolve(),
+        this.isSuperAdmin ? this.fetchBlogSiteState() : Promise.resolve(),
+      ]);
       this.startSlideTimer();
       this.startPollTimer();
       this.startAdminTimeoutWatcher();
@@ -314,11 +394,14 @@ createApp({
           return parsed;
         });
         this.isAdmin = true;
-        this.currentAdmin = data.user || { username: "admin", role: "admin" };
+        this.currentAdmin = data.user || { username: "admin", role: "site_admin" };
         this.adminCsrfToken = data.csrf_token || this.adminCsrfToken || "";
         if (this.adminCsrfToken) sessionStorage.setItem(this.getAdminCsrfKey(), this.adminCsrfToken);
         this.touchAdminActivity();
-        await this.fetchAdminUsers();
+        if (this.isSuperAdmin) await this.fetchAdminUsers();
+        if (this.isBlogAdmin) await this.fetchCommunityUsers();
+        if (this.isSuperAdmin) await this.fetchBlogSiteState();
+        this.ensureActiveFeatureAccess();
       } catch {
         this.clearAdminSession();
       }
@@ -345,14 +428,24 @@ createApp({
         });
         this.adminToken = "";
         this.adminCsrfToken = data.csrf_token || "";
-        this.currentAdmin = data.user || { username, role: "admin" };
+        this.currentAdmin = data.user || { username, role: "site_admin" };
         this.isAdmin = true;
         localStorage.removeItem(this.getAdminTokenKey());
         if (this.adminCsrfToken) sessionStorage.setItem(this.getAdminCsrfKey(), this.adminCsrfToken);
         this.touchAdminActivity();
         this.loginForm.password = "";
         this.loginText = "后台登录成功。";
-        await Promise.all([this.fetchRecruitList(), this.fetchAdminUsers()]);
+        await Promise.all([
+          this.isSiteAdmin ? this.fetchRecruitList() : Promise.resolve(),
+          this.isSuperAdmin ? this.fetchAdminUsers() : Promise.resolve(),
+          this.isBlogAdmin ? this.fetchCommunityUsers() : Promise.resolve(),
+          this.isSuperAdmin ? this.fetchBlogSiteState() : Promise.resolve(),
+          this.isSuperAdmin ? this.fetchAuditConversations() : Promise.resolve(),
+          this.isSuperAdmin ? this.fetchAuditGroups() : Promise.resolve(),
+        ]);
+        if (!this.isSuperAdmin) {
+          this.activeFeature = this.isBlogAdmin ? "communityUsers" : "overview";
+        }
       } catch (err) {
         this.clearAdminSession();
         this.loginForm.password = "";
@@ -423,8 +516,16 @@ createApp({
     },
 
     setActiveFeature(key) {
-      if (key === "admins" && !this.isSuperAdmin) {
-        this.activeFeature = "overview";
+      if ((key === "admins" || key === "superAudit" || key === "blogSite") && !this.isSuperAdmin) {
+        this.activeFeature = this.isBlogAdmin ? "communityUsers" : "overview";
+        return;
+      }
+      if (key === "communityUsers" && !this.isBlogAdmin) {
+        this.activeFeature = this.isSiteAdmin ? "overview" : "admins";
+        return;
+      }
+      if (this.siteFeatureKeys.includes(key) && !this.isSiteAdmin) {
+        this.activeFeature = this.isBlogAdmin ? "communityUsers" : "admins";
         return;
       }
       if (key !== "seniors" && this.hasSeniorEditing()) {
@@ -432,7 +533,20 @@ createApp({
         this.seniorEditDrafts = {};
       }
       this.activeFeature = key;
+      if (key === "communityUsers" && this.isBlogAdmin) this.fetchCommunityUsers();
+      if (key === "blogSite" && this.isSuperAdmin) this.fetchBlogSiteState();
+      if (key === "superAudit") {
+        this.fetchAuditConversations();
+        this.fetchAuditGroups();
+      }
       this.scrollToModules();
+    },
+
+    ensureActiveFeatureAccess() {
+      const firstVisible = this.visibleFeatureTabs[0] && this.visibleFeatureTabs[0].key;
+      if (!firstVisible) return;
+      const allowed = this.visibleFeatureTabs.some((item) => item.key === this.activeFeature);
+      if (!allowed) this.activeFeature = firstVisible;
     },
 
     scrollToModules() {
@@ -802,7 +916,7 @@ createApp({
 
     async onHeroImagePick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.imageText = "请先后台登录后再上传轮播图";
         e.target.value = "";
         return;
@@ -832,7 +946,7 @@ createApp({
 
     async deleteHeroImage(url) {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       if (!url) return;
       try {
         await this.fetchJSON("/api/content/gallery/delete", {
@@ -951,7 +1065,7 @@ createApp({
 
     async addNews() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       if (!String(this.newsForm.title || "").trim()) {
         this.newsText = "请先填写新闻标题";
         return;
@@ -973,7 +1087,7 @@ createApp({
 
     async onNewsCoverPick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.newsImageText = "请先登录管理员账号再上传新闻封面。";
         e.target.value = "";
         return;
@@ -998,7 +1112,7 @@ createApp({
 
     async onNewsBodyImagesPick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.newsImageText = "请先登录管理员账号再上传正文配图。";
         e.target.value = "";
         return;
@@ -1067,7 +1181,7 @@ createApp({
 
     async updateNews() {
       this.touchAdminActivity();
-      if (!this.isAdmin || !this.editingNewsId) return;
+      if (!this.isSiteAdmin || !this.editingNewsId) return;
       if (!String(this.newsEditForm.title || "").trim()) {
         this.newsEditImageText = "请先填写新闻标题。";
         return;
@@ -1090,7 +1204,7 @@ createApp({
 
     async onNewsEditCoverPick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !this.editingNewsId) return;
+      if (!this.isSiteAdmin || !this.editingNewsId) return;
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
       this.newsEditImageText = "正在上传新的新闻封面...";
@@ -1111,7 +1225,7 @@ createApp({
 
     async onNewsEditBodyImagesPick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !this.editingNewsId) return;
+      if (!this.isSiteAdmin || !this.editingNewsId) return;
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
       this.newsEditImageText = "正在上传正文配图...";
@@ -1155,7 +1269,7 @@ createApp({
 
     async removeNews(id) {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       if (!window.confirm("确认删除这条新闻吗？")) return;
       try {
         await this.fetchJSON(`/api/news/${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -1188,7 +1302,7 @@ createApp({
 
     async addReviewAlbum() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       const payload = {
         title: String(this.reviewAlbumForm.title || "").trim(),
         date: String(this.reviewAlbumForm.date || "").trim(),
@@ -1224,7 +1338,7 @@ createApp({
 
     async onReviewAlbumAppendImages(album, e) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !album || !album.id) return;
+      if (!this.isSiteAdmin || !album || !album.id) return;
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
       this.reviewText = "正在追加栏目照片...";
@@ -1243,7 +1357,7 @@ createApp({
 
     async updateReviewAlbum(album, showMessage = true) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !album || !album.id) return;
+      if (!this.isSiteAdmin || !album || !album.id) return;
       const payload = {
         title: String(album.title || "").trim(),
         date: String(album.date || "").trim(),
@@ -1281,7 +1395,7 @@ createApp({
 
     async removeReviewAlbumImage(album, url) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !album || !album.id || !url) return;
+      if (!this.isSiteAdmin || !album || !album.id || !url) return;
       try {
         const data = await this.fetchJSON(`/api/review/albums/${album.id}/image/delete`, {
           method: "POST",
@@ -1299,7 +1413,7 @@ createApp({
 
     async deleteReviewAlbum(album) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !album || !album.id) return;
+      if (!this.isSiteAdmin || !album || !album.id) return;
       if (!window.confirm(`确认删除回顾栏目「${album.title || album.id}」吗？`)) return;
       try {
         await this.fetchJSON(`/api/review/albums/${album.id}`, { method: "DELETE" });
@@ -1312,7 +1426,7 @@ createApp({
 
     async saveTeamOverview() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       try {
         await this.fetchJSON("/api/content/overview", {
           method: "POST",
@@ -1327,7 +1441,7 @@ createApp({
 
     async saveTeamIntro() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       try {
         await this.fetchJSON("/api/content/intro", {
           method: "POST",
@@ -1356,7 +1470,7 @@ createApp({
 
     async ingestDefault() {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.statusText = "请先后台登录后再操作知识库";
         return;
       }
@@ -1372,7 +1486,7 @@ createApp({
 
     async rebuildDefault() {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.statusText = "请先后台登录后再操作知识库";
         return;
       }
@@ -1392,7 +1506,7 @@ createApp({
 
     async uploadPdf() {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.uploadPdfText = "请先后台登录后再上传 PDF";
         return;
       }
@@ -1416,7 +1530,7 @@ createApp({
 
     async onAwardImagePick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.awardImageText = "请先后台登录后再上传奖项配图";
         e.target.value = "";
         return;
@@ -1447,7 +1561,7 @@ createApp({
 
     async addAward() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       if (!this.awardForm.title) return;
       try {
         await this.fetchJSON("/api/awards", {
@@ -1474,7 +1588,7 @@ createApp({
 
     async editAward(item) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !item || !item.id) return;
+      if (!this.isSiteAdmin || !item || !item.id) return;
       const title = window.prompt("奖项名称", item.title || "");
       if (title === null) return;
       const typeInput = window.prompt("奖项分类：团队赛 / 个人赛", this.awardTypeLabel(item));
@@ -1512,7 +1626,7 @@ createApp({
     },
 
     async toggleAwardPinned(item) {
-      if (!item || !item.id) return;
+      if (!this.isSiteAdmin || !item || !item.id) return;
       try {
         await this.fetchJSON(`/api/awards/${encodeURIComponent(item.id)}`, {
           method: "PUT",
@@ -1527,7 +1641,7 @@ createApp({
 
     async removeAward(id) {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       try {
         await this.fetchJSON(`/api/awards/${id}`, { method: "DELETE" });
         await this.loadContent();
@@ -1538,7 +1652,7 @@ createApp({
 
     async onSeniorImagePick(e) {
       this.touchAdminActivity();
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.seniorImageText = "Please log in before uploading senior photos.";
         e.target.value = "";
         return;
@@ -1570,7 +1684,7 @@ createApp({
     async onSeniorCardImagePick(itemId, e) {
       this.touchAdminActivity();
       const id = String(itemId || "");
-      if (!this.isAdmin || !id) {
+      if (!this.isSiteAdmin || !id) {
         if (e && e.target) e.target.value = "";
         return;
       }
@@ -1627,7 +1741,7 @@ createApp({
 
     async addSenior() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       if (!this.seniorForm.name) return;
       const payload = {
         ...this.seniorForm,
@@ -1662,7 +1776,7 @@ createApp({
     async finishSeniorEdit(itemId) {
       this.touchAdminActivity();
       const id = String(itemId || "");
-      if (!this.isAdmin || !id) return;
+      if (!this.isSiteAdmin || !id) return;
       const draft = this.seniorEditDrafts[id];
       if (!draft || !String(draft.name || "").trim()) {
         this.seniorImageText = "Please enter a name before saving.";
@@ -1686,7 +1800,7 @@ createApp({
 
     async removeSenior(id) {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       try {
         await this.fetchJSON(`/api/seniors/${id}`, { method: "DELETE" });
         delete this.seniorEditingState[String(id)];
@@ -1698,7 +1812,7 @@ createApp({
     },
 
     async fetchRecruitList() {
-      if (!this.isAdmin) {
+      if (!this.isSiteAdmin) {
         this.recruitList = [];
         return;
       }
@@ -1730,12 +1844,12 @@ createApp({
 
     async addAdminUser() {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSuperAdmin) return;
       const payload = {
         username: String(this.adminUserForm.username || "").trim(),
         display_name: String(this.adminUserForm.display_name || "").trim(),
         password: String(this.adminUserForm.password || ""),
-        role: this.adminUserForm.role || "admin",
+        role: this.adminUserForm.role || "site_admin",
       };
       if (!payload.username || !payload.password) {
         this.adminUserText = "请填写用户名和初始密码。";
@@ -1748,7 +1862,7 @@ createApp({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        this.adminUserForm = { username: "", display_name: "", password: "", role: "admin" };
+        this.adminUserForm = { username: "", display_name: "", password: "", role: "site_admin" };
         this.adminUserText = "管理员添加成功。";
         await this.fetchAdminUsers();
       } catch (err) {
@@ -1759,8 +1873,8 @@ createApp({
 
     async changeAdminRole(user, role) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !user || !user.id) return;
-      const nextRole = role === "superadmin" ? "superadmin" : "admin";
+      if (!this.isSuperAdmin || !user || !user.id) return;
+      const nextRole = ["site_admin", "blog_admin", "superadmin"].includes(role) ? role : "site_admin";
       try {
         await this.fetchJSON(`/api/admin/users/${user.id}/role`, {
           method: "PUT",
@@ -1777,7 +1891,7 @@ createApp({
 
     async promptResetAdminPassword(user) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !user || !user.id) return;
+      if (!this.isSuperAdmin || !user || !user.id) return;
       const password = window.prompt(`请输入 ${user.username} 的新密码（至少 6 位）`);
       if (!password) return;
       try {
@@ -1795,7 +1909,7 @@ createApp({
 
     async deleteAdminUser(id) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !id) return;
+      if (!this.isSuperAdmin || !id) return;
       if (!window.confirm("确认删除该管理员用户？")) return;
       try {
         await this.fetchJSON(`/api/admin/users/${id}`, { method: "DELETE" });
@@ -1806,6 +1920,282 @@ createApp({
       }
     },
 
+
+    adminRoleOptionsFor(user) {
+      if (user && user.role === "superadmin") {
+        return [{ value: "superadmin", label: "\u8d85\u7ea7\u7ba1\u7406\u5458" }];
+      }
+      return this.adminUserRoleOptions;
+    },
+
+    async fetchBlogSiteState() {
+      if (!this.isSuperAdmin) return;
+      try {
+        const data = await this.fetchJSON("/api/admin/blog/site-state");
+        if (data && data.state) {
+          this.blogSiteState = { ...this.blogSiteState, ...data.state };
+        }
+      } catch (err) {
+        this.blogSiteStateText = `\u535a\u5ba2\u7ad9\u72b6\u6001\u8bfb\u53d6\u5931\u8d25\uff1a${err.message}`;
+      }
+    },
+
+    async saveBlogSiteState() {
+      this.touchAdminActivity();
+      if (!this.isSuperAdmin) return;
+      this.blogSiteStateText = "\u6b63\u5728\u4fdd\u5b58\u535a\u5ba2\u7ad9\u5f00\u653e\u72b6\u6001...";
+      try {
+        const data = await this.fetchJSON("/api/admin/blog/site-state", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            open: !!this.blogSiteState.open,
+            notice: this.blogSiteState.notice || "\u535a\u5ba2\u7ad9\u6682\u4e0d\u5bf9\u5916\u5f00\u653e\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
+          }),
+        });
+        if (data && data.state) this.blogSiteState = { ...this.blogSiteState, ...data.state };
+        this.blogSiteStateText = this.blogSiteState.open
+          ? "\u535a\u5ba2\u7ad9\u5df2\u5bf9\u5916\u5f00\u653e\u3002"
+          : "\u535a\u5ba2\u7ad9\u5df2\u4e34\u65f6\u5173\u95ed\uff0c\u5bf9\u5916\u9875\u9762\u548c\u535a\u5ba2\u63a5\u53e3\u4e0d\u53ef\u8bbf\u95ee\uff1b\u6570\u636e\u4e0e\u7f13\u5b58\u4fdd\u6301\u4e0d\u53d8\u3002";
+      } catch (err) {
+        this.blogSiteStateText = `\u4fdd\u5b58\u5931\u8d25\uff1a${err.message}`;
+      }
+    },
+
+    communityUserKey(user) {
+      return encodeURIComponent(String((user && (user.user_pk || user.id || user.user_id)) || ""));
+    },
+
+    communityUserName(user) {
+      if (!user) return "未知用户";
+      return user.nickname || user.user_id || user.id || "未知用户";
+    },
+
+    communityUserRoleLabel(role) {
+      const found = [...this.communityPrivilegedRoleOptions].find((x) => x.value === role);
+      return found ? found.label : "普通用户";
+    },
+
+    communityUserStatusLabel(status) {
+      const found = [
+        ...this.communityStatusOptions,
+        { value: "pending", label: "\u5f85\u5ba1\u6838" },
+        { value: "rejected", label: "\u5df2\u9a73\u56de" },
+        { value: "deleted", label: "\u5df2\u5220\u9664" },
+      ].find((x) => x.value === status);
+      return found ? found.label : "\u6b63\u5e38";
+    },
+
+    communityStatusControlOptions(user) {
+      if (user && user.status === "pending") {
+        return [
+          { value: "pending", label: "\u5f85\u5ba1\u6838" },
+          { value: "active", label: "\u6279\u51c6\u6ce8\u518c" },
+          { value: "rejected", label: "\u9a73\u56de\u7533\u8bf7" },
+        ];
+      }
+      return this.communityStatusOptions;
+    },
+
+    isPendingCommunityUser(user) {
+      return !!(user && user.status === "pending");
+    },
+
+    communityUserStat(user, key) {
+      return Number((user && user.stats && user.stats[key]) || 0);
+    },
+
+    async fetchCommunityUsers() {
+      if (!this.isBlogAdmin) {
+        this.communityUsers = [];
+        this.communityUserTotal = 0;
+        return;
+      }
+      const q = encodeURIComponent(String(this.communityUserKeyword || "").trim());
+      const includeDeleted = this.isSuperAdmin ? "1" : "0";
+      try {
+        const data = await this.fetchJSON(`/api/admin/community/users?page_size=80&include_deleted=${includeDeleted}&q=${q}`);
+        this.communityUsers = Array.isArray(data.items) ? data.items : [];
+        this.communityUserTotal = Number(data.total || this.communityUsers.length || 0);
+        this.communityUserText = `\u5df2\u8f7d\u5165 ${this.communityUsers.length} / ${this.communityUserTotal} \u4e2a\u7528\u6237\u3002\u5f85\u5ba1\u6838\u7528\u6237\u9700\u70b9\u51fb\u201c\u6279\u51c6\u6ce8\u518c\u201d\u540e\u624d\u80fd\u767b\u5f55\uff1b\u9a73\u56de\u540e\u8be5 ID \u53ef\u91cd\u65b0\u6ce8\u518c\u3002`;
+      } catch (err) {
+        this.communityUserText = `用户列表获取失败：${err.message}`;
+      }
+    },
+
+    async addCommunityUser() {
+      this.touchAdminActivity();
+      if (!this.isBlogAdmin) return;
+      const payload = {
+        user_id: String(this.communityUserForm.user_id || "").trim(),
+        nickname: String(this.communityUserForm.nickname || "").trim(),
+        password: String(this.communityUserForm.password || ""),
+        role: this.communityUserForm.role || "user",
+        status: this.communityUserForm.status || "active",
+      };
+      if (!payload.user_id || !payload.nickname || !payload.password) {
+        this.communityUserText = "请填写用户 ID、昵称和初始密码。";
+        return;
+      }
+      if (!this.isSuperAdmin && ["admin", "superadmin"].includes(payload.role)) payload.role = "user";
+      this.communityUserText = "正在创建博客用户...";
+      try {
+        await this.fetchJSON("/api/admin/community/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        this.communityUserForm = { user_id: "", nickname: "", password: "", role: "user", status: "active" };
+        this.communityUserText = "博客用户创建成功。";
+        await this.fetchCommunityUsers();
+      } catch (err) {
+        this.communityUserText = `创建失败：${err.message}`;
+      }
+    },
+
+    async changeCommunityUserStatus(user, status) {
+      this.touchAdminActivity();
+      const id = this.communityUserKey(user);
+      if (!this.isBlogAdmin || !id) return;
+      if (status === "rejected" && !window.confirm(`\u786e\u8ba4\u9a73\u56de ${this.communityUserName(user)} \u7684\u6ce8\u518c\u7533\u8bf7\uff1f\u9a73\u56de\u540e\u8be5 ID \u4f1a\u91ca\u653e\uff0c\u9700\u5bf9\u65b9\u91cd\u65b0\u6ce8\u518c\u3002`)) return;
+      try {
+        await this.fetchJSON(`/api/admin/community/users/${id}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        if (status === "active" && user.status === "pending") {
+          this.communityUserText = `${this.communityUserName(user)} \u7684\u6ce8\u518c\u7533\u8bf7\u5df2\u6279\u51c6\uff0c\u73b0\u5728\u53ef\u4ee5\u767b\u5f55\u3002`;
+        } else if (status === "rejected") {
+          this.communityUserText = `${this.communityUserName(user)} \u7684\u6ce8\u518c\u7533\u8bf7\u5df2\u9a73\u56de\uff0c\u8be5 ID \u5df2\u91ca\u653e\uff0c\u9700\u8981\u91cd\u65b0\u6ce8\u518c\u3002`;
+        } else {
+          this.communityUserText = `${this.communityUserName(user)} \u72b6\u6001\u5df2\u66f4\u65b0\u4e3a ${this.communityUserStatusLabel(status)}\u3002`;
+        }
+        await this.fetchCommunityUsers();
+      } catch (err) {
+        this.communityUserText = `\u72b6\u6001\u66f4\u65b0\u5931\u8d25\uff1a${err.message}`;
+        await this.fetchCommunityUsers();
+      }
+    },
+
+    approveCommunityUser(user) {
+      return this.changeCommunityUserStatus(user, "active");
+    },
+
+    rejectCommunityUser(user) {
+      return this.changeCommunityUserStatus(user, "rejected");
+    },
+
+    async changeCommunityUserRole(user, role) {
+      this.touchAdminActivity();
+      const id = this.communityUserKey(user);
+      if (!this.isBlogAdmin || !id) return;
+      try {
+        await this.fetchJSON(`/api/admin/community/users/${id}/role`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role }),
+        });
+        this.communityUserText = `${this.communityUserName(user)} 角色已更新为 ${this.communityUserRoleLabel(role)}。`;
+        await this.fetchCommunityUsers();
+      } catch (err) {
+        this.communityUserText = `角色更新失败：${err.message}`;
+        await this.fetchCommunityUsers();
+      }
+    },
+
+    async promptResetCommunityPassword(user) {
+      this.touchAdminActivity();
+      const id = this.communityUserKey(user);
+      if (!this.isBlogAdmin || !id) return;
+      const password = window.prompt(`请输入 ${this.communityUserName(user)} 的新密码（至少 8 位，不能包含 123456/password）`);
+      if (!password) return;
+      try {
+        await this.fetchJSON(`/api/admin/community/users/${id}/password`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        this.communityUserText = `${this.communityUserName(user)} 的密码已重置，旧会话已失效。`;
+      } catch (err) {
+        this.communityUserText = `重置密码失败：${err.message}`;
+      }
+    },
+
+    async deleteCommunityUser(user) {
+      this.touchAdminActivity();
+      const id = this.communityUserKey(user);
+      if (!this.isBlogAdmin || !id) return;
+      if (!window.confirm(`确认删除博客用户 ${this.communityUserName(user)}？该用户会被软删除并退出登录。`)) return;
+      try {
+        await this.fetchJSON(`/api/admin/community/users/${id}`, { method: "DELETE" });
+        this.communityUserText = `${this.communityUserName(user)} 已删除。`;
+        await this.fetchCommunityUsers();
+      } catch (err) {
+        this.communityUserText = `删除失败：${err.message}`;
+      }
+    },
+
+    auditParticipants(item) {
+      const list = Array.isArray(item && item.participants) ? item.participants : [];
+      if (!list.length) return "未知会话";
+      return list.map((u) => `${u.nickname || u.user_id || u.id || "用户"}（${u.user_id || u.id || "-"}）`).join(" ↔ ");
+    },
+
+    auditSenderName(message) {
+      const sender = message && message.sender;
+      return sender ? (sender.nickname || sender.user_id || sender.id || "未知用户") : "未知用户";
+    },
+
+    async fetchAuditConversations() {
+      if (!this.isSuperAdmin) return;
+      try {
+        const data = await this.fetchJSON("/api/superadmin/audit/private-conversations?page_size=80");
+        this.auditConversations = Array.isArray(data.items) ? data.items : [];
+        this.auditText = `已载入 ${this.auditConversations.length} 个私信会话。`;
+      } catch (err) {
+        this.auditText = `私信审计载入失败：${err.message}`;
+      }
+    },
+
+    async fetchAuditGroups() {
+      if (!this.isSuperAdmin) return;
+      try {
+        const data = await this.fetchJSON("/api/superadmin/audit/groups?page_size=80");
+        this.auditGroups = Array.isArray(data.items) ? data.items : [];
+        this.auditText = `已载入 ${this.auditGroups.length} 个群聊。`;
+      } catch (err) {
+        this.auditText = `群聊审计载入失败：${err.message}`;
+      }
+    },
+
+    async openAuditConversation(conv) {
+      if (!this.isSuperAdmin || !conv || !conv.id) return;
+      this.auditTarget = { type: "private", id: conv.id, title: this.auditParticipants(conv) };
+      this.auditText = "正在读取私信记录...";
+      try {
+        const data = await this.fetchJSON(`/api/superadmin/audit/private-conversations/${encodeURIComponent(conv.id)}/messages?limit=200`);
+        this.auditMessages = Array.isArray(data.items) ? data.items : [];
+        this.auditText = `已显示私信记录 ${this.auditMessages.length} 条。`;
+      } catch (err) {
+        this.auditMessages = [];
+        this.auditText = `读取私信失败：${err.message}`;
+      }
+    },
+
+    async openAuditGroup(group) {
+      if (!this.isSuperAdmin || !group || !group.id) return;
+      this.auditTarget = { type: "group", id: group.id, title: `群聊：${group.name || group.id}` };
+      this.auditText = "正在读取群聊记录...";
+      try {
+        const data = await this.fetchJSON(`/api/superadmin/audit/groups/${encodeURIComponent(group.id)}/messages?limit=200`);
+        this.auditMessages = Array.isArray(data.items) ? data.items : [];
+        this.auditText = `已显示群聊记录 ${this.auditMessages.length} 条。`;
+      } catch (err) {
+        this.auditMessages = [];
+        this.auditText = `读取群聊失败：${err.message}`;
+      }
+    },
     async submitRecruit() {
       if (!this.recruitForm.name || !this.recruitForm.student_id) {
         this.recruitText = "请填写姓名和学号后再提交";
@@ -1819,7 +2209,7 @@ createApp({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(this.recruitForm),
         });
-        if (this.isAdmin && shouldPin && data.item && data.item.id) {
+        if (this.isSiteAdmin && shouldPin && data.item && data.item.id) {
           await this.fetchJSON(`/api/recruit/${encodeURIComponent(data.item.id)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -1850,7 +2240,7 @@ createApp({
 
     async editRecruit(item) {
       this.touchAdminActivity();
-      if (!this.isAdmin || !item || !item.id) return;
+      if (!this.isSiteAdmin || !item || !item.id) return;
       const name = window.prompt("姓名", item.name || "");
       if (name === null) return;
       const student_id = window.prompt("学号", item.student_id || "");
@@ -1902,7 +2292,7 @@ createApp({
     },
 
     async toggleRecruitPinned(item) {
-      if (!item || !item.id) return;
+      if (!this.isSiteAdmin || !item || !item.id) return;
       try {
         await this.fetchJSON(`/api/recruit/${encodeURIComponent(item.id)}`, {
           method: "PUT",
@@ -1917,7 +2307,7 @@ createApp({
 
     async deleteRecruit(id) {
       this.touchAdminActivity();
-      if (!this.isAdmin) return;
+      if (!this.isSiteAdmin) return;
       try {
         await this.fetchJSON(`/api/recruit/${id}`, { method: "DELETE" });
         await this.fetchRecruitList();
@@ -1970,6 +2360,13 @@ createApp({
     },
   },
 }).mount("#app");
+
+
+
+
+
+
+
 
 
 

@@ -229,6 +229,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if isBlogFrontendPath(path) && !s.blogSiteAllowsRequest(r) {
+		s.handleBlogClosedPage(w, r)
+		return
+	}
 	if isMutating(r.Method) && s.requiresAdminCSRF(path) {
 		if err := s.checkCSRF(r); err != nil {
 			writeError(w, http.StatusForbidden, err.Error())
@@ -333,6 +337,18 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 }
 
 func (s *Server) routeAPI(w http.ResponseWriter, r *http.Request, path string) {
+	if s.routeAdminBlogOps(w, r, path) {
+		return
+	}
+	if s.requiresSiteAdminAPI(path, r.Method) {
+		if _, ok := s.requireSiteAdmin(w, r); !ok {
+			return
+		}
+	}
+	if isCommunityAPIPath(path) && !s.blogSiteAllowsRequest(r) {
+		writeError(w, http.StatusServiceUnavailable, s.loadBlogSiteState().Notice)
+		return
+	}
 	switch {
 	case path == "/api/status" && r.Method == http.MethodGet:
 		s.handleStatus(w, r)
@@ -445,6 +461,9 @@ func (s *Server) setSecurityHeaders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 	w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Admin-Token, X-User-Token, X-CSRF-Token")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 }
@@ -456,7 +475,7 @@ func (s *Server) serveStaticHTML(w http.ResponseWriter, r *http.Request, name st
 
 func (s *Server) serveFileRoot(w http.ResponseWriter, r *http.Request, root, rel string) {
 	rel = filepath.Clean(strings.TrimPrefix(rel, "/"))
-	if rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+	if rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) || blockedPublicFile(rel) {
 		http.NotFound(w, r)
 		return
 	}
@@ -473,6 +492,31 @@ func (s *Server) serveFileRoot(w http.ResponseWriter, r *http.Request, root, rel
 		w.Header().Set("Content-Type", ct)
 	}
 	http.ServeFile(w, r, full)
+}
+
+func blockedPublicFile(rel string) bool {
+	normalized := filepath.ToSlash(filepath.Clean(rel))
+	for _, part := range strings.Split(normalized, "/") {
+		if part == "" {
+			continue
+		}
+		if strings.HasPrefix(part, ".") {
+			return true
+		}
+	}
+	lower := strings.ToLower(normalized)
+	if strings.HasSuffix(lower, "~") {
+		return true
+	}
+	for _, suffix := range []string{
+		".codex_backup", ".bak", ".backup", ".old", ".orig", ".tmp", ".temp", ".swp",
+		".env", ".log", ".db", ".sqlite", ".sqlite3", ".go", ".py", ".ps1", ".sh", ".bat", ".cmd",
+	} {
+		if strings.HasSuffix(lower, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
@@ -615,6 +659,35 @@ func (s *Server) clearRateLimit(key string) {
 	delete(s.rate, key)
 }
 
+func (s *Server) requiresSiteAdminAPI(path, method string) bool {
+	if path == "/api/recruit/list" {
+		return method == http.MethodGet
+	}
+	if path == "/api/recruit/stats" {
+		return false
+	}
+	if strings.HasPrefix(path, "/api/recruit/") && path != "/api/recruit/apply" && path != "/api/recruit/captcha" && path != "/api/recruit/halls" && path != "/api/recruit/stats" {
+		return true
+	}
+	if strings.HasPrefix(path, "/api/awards") || strings.HasPrefix(path, "/api/seniors") || strings.HasPrefix(path, "/api/review") {
+		return isMutating(method)
+	}
+	if strings.HasPrefix(path, "/api/news") {
+		return isMutating(method)
+	}
+	if strings.HasPrefix(path, "/api/content") {
+		return isMutating(method)
+	}
+	if strings.HasPrefix(path, "/api/ingest") {
+		return true
+	}
+	switch path {
+	case "/api/upload", "/api/upload/images", "/api/upload/awards/images", "/api/upload/seniors/images", "/api/upload/review/images", "/api/upload/news/images":
+		return true
+	}
+	return false
+}
+
 func (s *Server) requiresAdminCSRF(path string) bool {
 	if path == "/api/admin/login" {
 		return false
@@ -622,7 +695,7 @@ func (s *Server) requiresAdminCSRF(path string) bool {
 	if strings.HasPrefix(path, "/api/recruit/") && path != "/api/recruit/apply" {
 		return true
 	}
-	for _, p := range []string{"/api/admin", "/api/awards", "/api/seniors", "/api/news", "/api/review", "/api/content", "/api/ingest", "/api/upload"} {
+	for _, p := range []string{"/api/admin", "/api/superadmin", "/api/awards", "/api/seniors", "/api/news", "/api/review", "/api/content", "/api/ingest", "/api/upload"} {
 		if strings.HasPrefix(path, p) {
 			return true
 		}

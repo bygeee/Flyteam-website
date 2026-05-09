@@ -152,7 +152,9 @@ function setMessage(text) {
 function updatePreview() {
   const preview = document.getElementById("previewRoot");
   const content = document.getElementById("articleContent");
+  const counter = document.getElementById("editorWordCount");
   if (!preview || !content) return;
+  if (counter) counter.textContent = String([...content.value].length);
   preview.innerHTML = "";
   preview.appendChild(renderMarkdown(content.value));
 }

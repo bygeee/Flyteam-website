@@ -1,56 +1,86 @@
-<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flyteam 文章编辑器</title>
+  <title>Flyteam 创作工作台</title>
   <link rel="stylesheet" href="/static/public.css" />
   <link rel="stylesheet" href="/static/community.css" />
 </head>
-<body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/">Flyteam</a>
-      <nav class="nav">
-        <a href="/blog">博客</a>
-        <a href="/user-login">登录</a>
-        <a href="/user-register">注册</a>
-      </nav>
-    </div>
+<body class="campus-editor-page">
+  <header class="campus-blog-nav editor-nav">
+    <a class="campus-blog-brand" href="/"><span>Fly</span>team</a>
+    <nav>
+      <a href="/blog">博客广场</a>
+      <a class="active" href="/editor">写文章</a>
+      <a href="/account">个人中心</a>
+      <a href="/user-login">登录</a>
+    </nav>
   </header>
 
-  <main class="community-page editor-page">
-    <section class="community-hero">
-      <p class="sub">CREATOR CENTER</p>
-      <h1>文章编辑器</h1>
-      <p>支持 Markdown、代码块、图片上传、保存草稿和发布文章。</p>
+  <main class="campus-editor-shell">
+    <section class="campus-editor-hero">
+      <div>
+        <p class="campus-pill">CREATOR STUDIO</p>
+        <h1>把你的技术过程写成一篇高质量团队刊物。</h1>
+        <p>支持 Markdown、代码块、图片上传、实时预览、草稿和发布。版面改为更像现代校园社团官网的创作工作台。</p>
+      </div>
+      <div class="editor-hero-card">
+        <b id="editorWordCount">0</b>
+        <span>正文字符</span>
+      </div>
     </section>
 
-    <section class="editor-layout">
-      <form id="editorForm" class="editor-form">
-        <input id="articleTitle" placeholder="文章标题" required />
-        <textarea id="articleSummary" rows="3" placeholder="文章摘要"></textarea>
-        <input id="articleCover" placeholder="封面图 URL，可留空" />
-        <div class="editor-row">
-          <input id="articleCategory" placeholder="分类，例如 技术" />
-          <input id="articleTags" placeholder="标签，用逗号分隔，例如 Go,Flyteam" />
+    <section class="campus-editor-grid">
+      <form id="editorForm" class="campus-editor-form">
+        <div class="editor-card title-card">
+          <p class="campus-panel-kicker">ARTICLE META</p>
+          <input id="articleTitle" placeholder="文章标题：例如 2026 春季赛 Web 方向复盘" required />
+          <textarea id="articleSummary" rows="3" placeholder="文章摘要：一句话说明这篇文章解决了什么问题"></textarea>
+          <input id="articleCover" placeholder="封面图 URL，可留空；上传图片后也可以复制链接到这里" />
+          <div class="editor-row">
+            <input id="articleCategory" placeholder="分类，例如 Web / PWN / 复盘" />
+            <input id="articleTags" placeholder="标签，用逗号分隔，例如 Go,Flyteam,CTF" />
+          </div>
         </div>
-        <div class="editor-toolbar">
-          <label class="community-button editor-upload">
+
+        <div class="editor-card toolbar-card">
+          <label class="campus-secondary editor-upload">
             上传图片
             <input id="articleImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp" />
           </label>
-          <button type="button" id="insertCode" class="community-button secondary">插入代码块</button>
-          <button type="button" id="saveDraft" class="community-button secondary">保存草稿</button>
-          <button type="submit" class="community-button">发布文章</button>
+          <button type="button" id="insertCode" class="campus-secondary">插入代码块</button>
+          <button type="button" id="saveDraft" class="campus-secondary">保存草稿</button>
+          <button type="submit" class="campus-primary">发布文章</button>
         </div>
-        <textarea id="articleContent" class="markdown-input" rows="22" placeholder="在这里编写 Markdown 正文" required></textarea>
-        <p id="editorMsg" class="community-muted"></p>
+
+        <div class="editor-card writing-card">
+          <p class="campus-panel-kicker">MARKDOWN BODY</p>
+          <textarea id="articleContent" class="markdown-input" rows="24" placeholder="在这里编写 Markdown 正文。建议结构：背景 → 环境 → 步骤 → 代码/截图 → 复盘总结。" required></textarea>
+          <p id="editorMsg" class="reader-tip"></p>
+        </div>
       </form>
 
-      <aside class="editor-preview">
-        <h2>实时预览</h2>
-        <div id="previewRoot" class="article-body"></div>
+      <aside class="campus-editor-aside">
+        <section class="editor-card preview-card">
+          <div class="campus-section-head compact">
+            <div>
+              <p class="campus-panel-kicker">LIVE PREVIEW</p>
+              <h2>实时预览</h2>
+            </div>
+          </div>
+          <div id="previewRoot" class="article-body campus-preview-body"></div>
+        </section>
+        <section class="editor-card guide-card">
+          <p class="campus-panel-kicker">WRITING GUIDE</p>
+          <h2>推荐写法</h2>
+          <ul>
+            <li>标题直接描述问题和场景。</li>
+            <li>摘要说明结果，不写废话。</li>
+            <li>代码块标注语言，例如 ```go。</li>
+            <li>复盘最后写“踩坑”和“改进”。</li>
+          </ul>
+        </section>
       </aside>
     </section>
   </main>

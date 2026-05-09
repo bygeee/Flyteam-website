@@ -63,24 +63,66 @@ type PublicAdmin struct {
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 	Role        string `json:"role"`
+	RoleLabel   string `json:"role_label"`
 	CreatedAt   string `json:"created_at"`
 	LastLoginAt string `json:"last_login_at"`
 	CSRFToken   string `json:"csrf_token,omitempty"`
 }
 
 func normalizeRole(role string) string {
-	if strings.ToLower(strings.TrimSpace(role)) == "superadmin" {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "superadmin", "super_admin":
 		return "superadmin"
+	case "blog_admin", "blog":
+		return "blog_admin"
+	case "site_admin", "site", "promo_admin", "admin", "administrator":
+		return "site_admin"
+	default:
+		return "site_admin"
 	}
-	return "admin"
+}
+
+func isSuperAdminRole(role string) bool { return normalizeRole(role) == "superadmin" }
+
+func canManageSiteRole(role string) bool {
+	role = normalizeRole(role)
+	return role == "site_admin" || role == "superadmin"
+}
+
+func canManageBlogRole(role string) bool {
+	role = normalizeRole(role)
+	return role == "blog_admin" || role == "superadmin"
+}
+
+func adminRoleLabel(role string) string {
+	switch normalizeRole(role) {
+	case "superadmin":
+		return "\u8d85\u7ea7\u7ba1\u7406\u5458"
+	case "blog_admin":
+		return "\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458"
+	default:
+		return "\u5ba3\u4f20\u7ad9\u7ba1\u7406\u5458"
+	}
+}
+
+func countSuperAdmins(store AdminStore) int {
+	cnt := 0
+	for _, u := range store.Users {
+		if normalizeRole(u.Role) == "superadmin" {
+			cnt++
+		}
+	}
+	return cnt
 }
 
 func publicAdmin(u AdminUser) PublicAdmin {
-	return PublicAdmin{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName, Role: normalizeRole(u.Role), CreatedAt: u.CreatedAt, LastLoginAt: u.LastLoginAt}
+	role := normalizeRole(u.Role)
+	return PublicAdmin{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName, Role: role, RoleLabel: adminRoleLabel(role), CreatedAt: u.CreatedAt, LastLoginAt: u.LastLoginAt}
 }
 
 func publicSession(s AdminSession) PublicAdmin {
-	return PublicAdmin{ID: s.ID, Username: s.Username, DisplayName: s.DisplayName, Role: normalizeRole(s.Role), CSRFToken: s.CSRFToken}
+	role := normalizeRole(s.Role)
+	return PublicAdmin{ID: s.ID, Username: s.Username, DisplayName: s.DisplayName, Role: role, RoleLabel: adminRoleLabel(role), CSRFToken: s.CSRFToken}
 }
 
 func (s *Server) loadAdminUsers() (AdminStore, error) {
@@ -115,7 +157,7 @@ func (s *Server) loadAdminUsers() (AdminStore, error) {
 			pass = "admin123456"
 		}
 		salt, hash := hashPassword(pass, "")
-		out.Users = []AdminUser{{ID: randomHex(6), Username: "admin", DisplayName: "System Admin", Role: "admin", Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}}
+		out.Users = []AdminUser{{ID: randomHex(6), Username: "admin", DisplayName: "System Admin", Role: "site_admin", Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}}
 		_ = s.saveAdminUsers(out)
 	}
 	return out, nil
@@ -159,7 +201,7 @@ func (s *Server) loadAdminUsersDB() (AdminStore, error) {
 			pass = "admin123456"
 		}
 		salt, hash := hashPassword(pass, "")
-		u := AdminUser{ID: randomHex(6), Username: "admin", DisplayName: "System Admin", Role: "admin", Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}
+		u := AdminUser{ID: randomHex(6), Username: "admin", DisplayName: "System Admin", Role: "site_admin", Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}
 		if err := s.saveAdminUsersDB(AdminStore{Users: []AdminUser{u}}); err != nil {
 			return AdminStore{}, err
 		}
@@ -328,12 +370,36 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (AdminSess
 	return admin, true
 }
 
+func (s *Server) requireSiteAdmin(w http.ResponseWriter, r *http.Request) (AdminSession, bool) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok {
+		return AdminSession{}, false
+	}
+	if !canManageSiteRole(admin.Role) {
+		writeError(w, http.StatusForbidden, "Promotion site administrator permission required.")
+		return AdminSession{}, false
+	}
+	return admin, true
+}
+
+func (s *Server) requireBlogAdmin(w http.ResponseWriter, r *http.Request) (AdminSession, bool) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok {
+		return AdminSession{}, false
+	}
+	if !canManageBlogRole(admin.Role) {
+		writeError(w, http.StatusForbidden, "Blog site administrator permission required.")
+		return AdminSession{}, false
+	}
+	return admin, true
+}
+
 func (s *Server) requireSuperAdmin(w http.ResponseWriter, r *http.Request) (AdminSession, bool) {
 	admin, ok := s.requireAdmin(w, r)
 	if !ok {
 		return AdminSession{}, false
 	}
-	if normalizeRole(admin.Role) != "superadmin" {
+	if !isSuperAdminRole(admin.Role) {
 		writeError(w, http.StatusForbidden, "Super administrator permission required.")
 		return AdminSession{}, false
 	}
@@ -466,8 +532,13 @@ func (s *Server) handleAddAdminUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 409, "Admin username already exists.")
 		return
 	}
+	role := normalizeRole(req.Role)
+	if role == "superadmin" && countSuperAdmins(store) > 0 {
+		writeError(w, 400, "Only one super administrator is allowed.")
+		return
+	}
 	salt, hash := hashPassword(req.Password, "")
-	u := AdminUser{ID: randomHex(6), Username: username, DisplayName: strings.TrimSpace(req.DisplayName), Role: normalizeRole(req.Role), Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}
+	u := AdminUser{ID: randomHex(6), Username: username, DisplayName: strings.TrimSpace(req.DisplayName), Role: role, Salt: salt, PasswordHash: hash, CreatedAt: nowISO()}
 	store.Users = append(store.Users, u)
 	_ = s.saveAdminUsers(store)
 	writeJSON(w, 201, map[string]any{"user": publicAdmin(u)})
@@ -529,14 +600,17 @@ func (s *Server) handleUpdateAdminRole(w http.ResponseWriter, r *http.Request, i
 		writeError(w, 404, "Admin user not found.")
 		return
 	}
-	if store.Users[idx].Role == "superadmin" && next != "superadmin" {
-		cnt := 0
+	currentRole := normalizeRole(store.Users[idx].Role)
+	if next == "superadmin" {
 		for _, u := range store.Users {
-			if normalizeRole(u.Role) == "superadmin" {
-				cnt++
+			if normalizeRole(u.Role) == "superadmin" && u.ID != id {
+				writeError(w, 400, "Only one super administrator is allowed.")
+				return
 			}
 		}
-		if cnt <= 1 {
+	}
+	if currentRole == "superadmin" && next != "superadmin" {
+		if countSuperAdmins(store) <= 1 {
 			writeError(w, 400, "At least one super administrator must remain.")
 			return
 		}

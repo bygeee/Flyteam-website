@@ -96,7 +96,14 @@ func (s *Server) requireCommunityUser(w http.ResponseWriter, r *http.Request) (C
 		writeError(w, http.StatusUnauthorized, "User login required.")
 		return CommunityUser{}, false
 	}
-	if u.Status == "banned" || u.Status == "deleted" {
+	switch strings.ToLower(strings.TrimSpace(u.Status)) {
+	case "pending":
+		writeError(w, http.StatusForbidden, "This user account is waiting for administrator approval.")
+		return CommunityUser{}, false
+	case "rejected":
+		writeError(w, http.StatusForbidden, "This registration was rejected. Please register again.")
+		return CommunityUser{}, false
+	case "banned", "deleted":
 		writeError(w, http.StatusForbidden, "This user account is not allowed to use community features.")
 		return CommunityUser{}, false
 	}
@@ -120,7 +127,7 @@ func (s *Server) requireCommunityWriter(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) canModerateCommunity(r *http.Request, u CommunityUser) bool {
-	if admin, ok := s.adminFromRequest(r); ok && (normalizeRole(admin.Role) == "admin" || normalizeRole(admin.Role) == "superadmin") {
+	if admin, ok := s.adminFromRequest(r); ok && canManageBlogRole(admin.Role) {
 		return true
 	}
 	role := strings.ToLower(strings.TrimSpace(u.Role))
@@ -136,7 +143,7 @@ func (s *Server) resolveCommunityUserPK(raw string) (string, error) {
 		return "", errors.New("user id is required")
 	}
 	var id string
-	err := s.db.QueryRow(`SELECT id FROM community_users WHERE (id=? OR user_id=?) AND status!='deleted'`, raw, raw).Scan(&id)
+	err := s.db.QueryRow(`SELECT id FROM community_users WHERE (id=? OR user_id=?) AND status NOT IN ('deleted','pending','rejected')`, raw, raw).Scan(&id)
 	if err == sql.ErrNoRows {
 		return "", errors.New("user not found")
 	}
@@ -146,7 +153,7 @@ func (s *Server) resolveCommunityUserPK(raw string) (string, error) {
 func (s *Server) loadCommunityUserByPK(id string) (CommunityUser, error) {
 	var u CommunityUser
 	err := s.db.QueryRow(`SELECT id, user_id, nickname, COALESCE(avatar_url,''), COALESCE(bio,''), role, status, created_at, COALESCE(updated_at,''), COALESCE(last_login_at,'')
-		FROM community_users WHERE id=? AND status!='deleted'`, id).Scan(&u.ID, &u.UserID, &u.Nickname, &u.AvatarURL, &u.Bio, &u.Role, &u.Status, &u.CreatedAt, &u.UpdatedAt, &u.LastLoginAt)
+		FROM community_users WHERE id=? AND status NOT IN ('deleted','pending','rejected')`, id).Scan(&u.ID, &u.UserID, &u.Nickname, &u.AvatarURL, &u.Bio, &u.Role, &u.Status, &u.CreatedAt, &u.UpdatedAt, &u.LastLoginAt)
 	return u, err
 }
 

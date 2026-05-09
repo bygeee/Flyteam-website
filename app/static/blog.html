@@ -1,103 +1,124 @@
-<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flyteam 博客广场</title>
+  <title>Flyteam Campus Blog</title>
   <link rel="stylesheet" href="/static/public.css" />
-  <link rel="stylesheet" href="/static/community.css" />
+  <link rel="stylesheet" href="/static/community.css?v=blog-font-20260510" />
 </head>
-<body class="community-page blog-home">
-  <header class="topbar blog-topbar">
-    <div class="topbar-inner blog-topbar-inner">
-      <a class="brand" href="/">Flyteam</a>
-      <nav class="nav blog-nav">
-        <a href="/">首页</a>
-        <a class="active" href="/blog">博客</a>
-        <a href="/editor">写文章</a>
-        <a href="/messages">私信</a>
-        <a href="/groups">群聊</a>
-        <a href="/account">个人中心</a><a href="/user-login">登录</a>
-        <a href="/user-register">注册</a>
-      </nav>
-    </div>
+<body class="campus-blog-page">
+  <header class="campus-blog-nav">
+    <a class="campus-blog-brand" href="/"><span>Fly</span>team</a>
+    <nav>
+      <a href="/">首页</a>
+      <a class="active" href="/blog">博客广场</a>
+      <a href="/editor">写文章</a>
+      <a href="/messages">私信</a>
+      <a href="/groups">群聊</a>
+      <a href="/account">个人中心</a>
+    </nav>
   </header>
 
-  <main class="blog-shell">
-    <section class="blog-hero-card">
-      <div>
-        <p class="blog-eyebrow">FLYTEAM COMMUNITY BLOG</p>
-        <h1>把每一次复盘，写成下一次突破。</h1>
-        <p class="blog-hero-desc">成员文章、技术笔记、赛事复盘、经验沉淀集中展示。未登录可阅读，登录后可发布、评论、关注和私信。</p>
+  <main class="campus-blog-shell">
+    <section class="campus-blog-hero">
+      <div class="campus-hero-copy">
+        <p class="campus-pill">FLYTEAM KNOWLEDGE CAMPUS</p>
+        <h1>把比赛复盘、技术笔记和团队经验，做成真正好看的校园博客。</h1>
+        <p class="campus-hero-desc">灵感参考校园社团 / 学术社区类 Dribbble 作品：大留白、强视觉、Bento 卡片、杂志式排版。这里是 Flyteam 成员公开沉淀知识的入口。</p>
+        <div class="campus-hero-actions">
+          <a class="campus-primary" href="/editor">发布文章</a>
+          <a class="campus-secondary" href="/user-register">加入社区</a>
+        </div>
       </div>
-      <div class="blog-hero-actions">
-        <a class="community-btn primary" href="/editor">开始写文章</a>
-        <a class="community-btn" href="/user-register">注册账号</a>
+      <div class="campus-hero-stage" aria-hidden="true">
+        <div class="stage-orbit orbit-a"></div>
+        <div class="stage-orbit orbit-b"></div>
+        <article class="stage-card stage-main">
+          <span>FEATURED</span>
+          <strong id="heroFeatureTitle">Flyteam Blog</strong>
+          <p id="heroFeatureSummary">正在加载最新文章...</p>
+        </article>
+        <article class="stage-card stage-code"><span>CTF</span><code>flag = insight()</code></article>
+        <article class="stage-card stage-chat"><span>TEAM</span><b>复盘 / 分享 / 成长</b></article>
       </div>
     </section>
 
-    <section class="blog-dashboard">
-      <aside class="blog-sidebar left">
-        <section class="blog-widget blogger-widget">
-          <div class="blogger-avatar">F</div>
-          <h2>Flyteam Blog</h2>
-          <p>安全技术、团队学习、比赛复盘与成长记录。</p>
-          <div class="blogger-stats">
-            <span><b id="blogArticleTotal">0</b>文章</span>
-            <span><b id="blogReadTotal">0</b>阅读</span>
-          </div>
-        </section>
-        <section class="blog-widget quick-widget">
-          <h3>快捷入口</h3>
-          <a href="/editor">✍ 发布文章</a>
-          <a href="/messages">💬 私信中心</a>
-          <a href="/groups">👥 团队群聊</a>
-          <a href="/user-login">🔐 登录账号</a>
-        </section>
-        <section class="blog-widget tip-widget">
-          <h3>写作建议</h3>
-          <p>推荐结构：问题背景 → 环境/过程 → 关键代码/截图 → 结论复盘。</p>
-        </section>
-      </aside>
+    <section class="campus-stats-strip">
+      <div><b id="blogArticleTotal">0</b><span>公开文章</span></div>
+      <div><b id="blogReadTotal">0</b><span>累计阅读</span></div>
+      <div><b id="blogCommentTotal">0</b><span>讨论评论</span></div>
+      <div><b id="blogAuthorTotal">0</b><span>创作者</span></div>
+    </section>
 
-      <section class="blog-main-feed">
-        <div class="blog-feed-toolbar">
-          <div>
-            <p class="blog-eyebrow">RECENT POSTS</p>
-            <h2>最新发布</h2>
-            <p id="blogStatus">正在加载文章...</p>
-          </div>
-          <div class="blog-sort-pills" aria-label="文章视图">
-            <span class="on">最新</span>
-            <span>阅读</span>
-            <span>推荐</span>
-          </div>
-        </div>
-        <div id="blogList" class="blog-feed-list"></div>
-      </section>
-
-      <aside class="blog-sidebar right">
-        <section class="blog-widget search-widget">
-          <h3>站内搜索</h3>
-          <div class="blog-search-box">
+    <section class="campus-blog-grid">
+      <aside class="campus-blog-rail">
+        <section class="campus-panel search-panel">
+          <p class="campus-panel-kicker">SEARCH</p>
+          <h2>搜索知识</h2>
+          <div class="campus-search-box">
             <input id="communitySearchInput" placeholder="搜索文章 / 用户 / 标签" />
             <button id="communitySearchBtn" type="button">搜索</button>
           </div>
-          <div id="communitySearchResults" class="blog-search-results"></div>
+          <div id="communitySearchResults" class="campus-search-results"></div>
         </section>
-        <section class="blog-widget">
-          <h3>高热推荐</h3>
-          <div id="blogRecommendations" class="blog-recommend-list"></div>
+
+        <section class="campus-panel">
+          <p class="campus-panel-kicker">FILTER</p>
+          <h2>快速筛选</h2>
+          <div id="blogFilterChips" class="campus-chip-group">
+            <button class="on" data-filter="all" type="button">全部</button>
+            <button data-filter="Web" type="button">Web</button>
+            <button data-filter="PWN" type="button">PWN</button>
+            <button data-filter="Reverse" type="button">Reverse</button>
+            <button data-filter="Crypto" type="button">Crypto</button>
+            <button data-filter="复盘" type="button">复盘</button>
+          </div>
         </section>
-        <section class="blog-widget">
-          <h3>热门标签</h3>
-          <div id="blogTags" class="blog-tag-cloud">
+
+        <section class="campus-panel">
+          <p class="campus-panel-kicker">HOT TAGS</p>
+          <h2>热门标签</h2>
+          <div id="blogTags" class="campus-tag-cloud">
             <span>CTF</span><span>Web</span><span>Go</span><span>Reverse</span><span>Crypto</span><span>复盘</span>
           </div>
         </section>
       </aside>
+
+      <section class="campus-feed-area">
+        <div class="campus-section-head">
+          <div>
+            <p class="campus-panel-kicker">BLOG PLAZA</p>
+            <h2>最新校园技术刊物</h2>
+            <p id="blogStatus">正在加载文章...</p>
+          </div>
+          <div class="campus-sort-tabs" aria-label="排序">
+            <button class="on" data-sort="latest" type="button">最新</button>
+            <button data-sort="hot" type="button">高热</button>
+            <button data-sort="views" type="button">阅读</button>
+          </div>
+        </div>
+        <div id="featuredArticle" class="campus-featured-article"></div>
+        <div id="blogList" class="campus-article-bento"></div>
+      </section>
+
+      <aside class="campus-blog-side">
+        <section class="campus-panel recommendation-panel">
+          <p class="campus-panel-kicker">RECOMMEND</p>
+          <h2>高热推荐</h2>
+          <div id="blogRecommendations" class="campus-rank-list"></div>
+        </section>
+        <section class="campus-panel publish-panel">
+          <p class="campus-panel-kicker">WRITE</p>
+          <h2>今天写点什么？</h2>
+          <p>题解、项目复盘、工具教程、学习路线都可以沉淀为文章。</p>
+          <a class="campus-primary full" href="/editor">进入写作台</a>
+        </section>
+      </aside>
     </section>
   </main>
+
   <script src="/static/blog.js"></script>
 </body>
 </html>
+

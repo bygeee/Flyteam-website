@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -13,18 +13,19 @@
       <div class="admin-head-main">
         <div>
           <div class="brand">Flyteam 后台管理</div>
-          <p class="admin-sub">统一维护：首页轮播、团队新闻、团队回顾、团队简介、奖项、前辈墙、招新与知识库</p>
+          <p class="admin-sub">后台已拆分：宣传站管理员维护宣传站内容，博客站管理员维护博客用户，超级管理员全站唯一</p>
         </div>
 
         <div class="top-actions">
           <span :class="['admin-pill', isAdmin ? 'on' : 'off']">
-            {{ isAdmin ? '已登录管理员（30分钟无操作自动退出）' : '访客模式' }}
+            {{ isAdmin ? ('已登录：' + ((currentAdmin && (currentAdmin.role_label || currentAdmin.role)) || '管理员') + '（30分钟无操作自动退出）') : '访客模式' }}
           </span>
           <button v-if="!isAdmin" class="upload-mini" @click="adminLogin">后台登录</button>
           <button v-else class="upload-mini" @click="adminLogout">退出后台</button>
           <a class="link-mini" href="/" target="_blank" rel="noopener">前台首页</a>
           <a class="link-mini" href="/flyteamers" target="_blank" rel="noopener">Flyteamers</a>
           <a class="link-mini" href="/recruit" target="_blank" rel="noopener">招新页</a>
+          <a class="link-mini" href="/blog" target="_blank" rel="noopener">博客广场</a>
         </div>
       </div>
 
@@ -69,7 +70,7 @@
 
     <main id="modules" class="modules-wrap">
       <section class="module-panel">
-        <article v-if="activeFeature === 'overview'" class="panel-card">
+        <article v-if="activeFeature === 'overview' && isSiteAdmin" class="panel-card">
           <h2>团队概况</h2>
           <p class="hint">该文案会显示在前台首页头图下方“团队概况”位置。</p>
           <textarea v-model="teamOverview" rows="6" placeholder="输入团队概况（可实时维护）"></textarea>
@@ -79,11 +80,11 @@
           <p class="hint">{{ overviewText }}</p>
         </article>
 
-        <article v-if="activeFeature === 'gallery'" class="panel-card">
-          <h2>{{ isAdmin ? '轮播图片管理（实时）' : '轮播图片区' }}</h2>
-          <p class="hint" v-if="isAdmin">上传后会立刻进入首页轮播。</p>
+        <article v-if="activeFeature === 'gallery' && isSiteAdmin" class="panel-card">
+          <h2>{{ isSiteAdmin ? '轮播图片管理（实时）' : '轮播图片区' }}</h2>
+          <p class="hint" v-if="isSiteAdmin">上传后会立刻进入首页轮播。</p>
           <p class="hint" v-else>该区域仅展示轮播图片，修改需要管理员权限。</p>
-          <label class="uploader-row" v-if="isAdmin">
+          <label class="uploader-row" v-if="isSiteAdmin">
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple @change="onHeroImagePick" />
           </label>
           <p class="hint">{{ imageText }}</p>
@@ -91,12 +92,12 @@
             <figure class="thumb" v-for="url in heroImages" :key="url">
               <img :src="url" alt="轮播图" />
               <figcaption>{{ getFileName(url) }}</figcaption>
-              <button v-if="isAdmin" class="danger" @click="deleteHeroImage(url)">删除</button>
+              <button v-if="isSiteAdmin" class="danger" @click="deleteHeroImage(url)">删除</button>
             </figure>
           </div>
         </article>
 
-        <article v-if="activeFeature === 'news'" class="panel-card">
+        <article v-if="activeFeature === 'news' && isSiteAdmin" class="panel-card">
           <h2>团队新闻管理</h2>
           <form class="award-form" @submit.prevent="addNews">
             <input v-model.trim="newsForm.title" placeholder="新闻标题（必填）" required />
@@ -207,18 +208,18 @@
                 <p class="meta">{{ [n.date || '未填写日期', n.source || 'Flyteam'].join(' | ') }}</p>
                 <p>{{ n.summary || '-' }}</p>
                 <a class="link-mini" :href="`/news?id=${n.id}`" target="_blank" rel="noopener">查看详情</a>
-                <button v-if="isAdmin" class="ghost" @click="startNewsEdit(n)">编辑</button>
-                <button v-if="isAdmin" class="danger" @click="removeNews(n.id)">删除</button>
+                <button v-if="isSiteAdmin" class="ghost" @click="startNewsEdit(n)">编辑</button>
+                <button v-if="isSiteAdmin" class="danger" @click="removeNews(n.id)">删除</button>
               </template>
             </div>
           </div>
         </article>
 
-        <article v-if="activeFeature === 'review'" class="panel-card">
+        <article v-if="activeFeature === 'review' && isSiteAdmin" class="panel-card">
           <h2>团队回顾栏目管理</h2>
           <p class="hint">回顾现在按“栏目 / 相册”展示，例如：2026 春季团建、校赛复盘会议。每个栏目可配置摘要、正文与多张照片，前台点击栏目后进入独立详情页。</p>
 
-          <form v-if="isAdmin" class="award-form review-album-form" @submit.prevent="addReviewAlbum">
+          <form v-if="isSiteAdmin" class="award-form review-album-form" @submit.prevent="addReviewAlbum">
             <input v-model.trim="reviewAlbumForm.title" placeholder="栏目标题（如：2026 春季团建）" required />
             <input v-model.trim="reviewAlbumForm.date" placeholder="日期（例如 2026-05-08）" />
             <input v-model.trim="reviewAlbumForm.category" placeholder="栏目类型（团建 / 会议 / 比赛 / 换届）" />
@@ -251,7 +252,7 @@
                 </div>
               </div>
 
-              <div class="award-form top-gap" v-if="isAdmin">
+              <div class="award-form top-gap" v-if="isSiteAdmin">
                 <input v-model.trim="album.title" placeholder="栏目标题" />
                 <input v-model.trim="album.date" placeholder="日期" />
                 <input v-model.trim="album.category" placeholder="栏目类型" />
@@ -281,7 +282,7 @@
           </div>
         </article>
 
-        <article v-if="activeFeature === 'intro'" class="panel-card">
+        <article v-if="activeFeature === 'intro' && isSiteAdmin" class="panel-card">
           <h2>团队简介管理</h2>
           <p class="hint">该内容展示在前台底部“团队简介”模块，可粘贴 PDF 中团队介绍文本。</p>
           <textarea v-model="teamIntro" rows="12" placeholder="输入团队简介文本"></textarea>
@@ -291,9 +292,9 @@
           <p class="hint">{{ introText }}</p>
         </article>
 
-        <article v-if="activeFeature === 'awards'" class="panel-card">
-          <h2>{{ isAdmin ? '奖项管理' : '奖项展示' }}</h2>
-          <form v-if="isAdmin" class="award-form" @submit.prevent="addAward">
+        <article v-if="activeFeature === 'awards' && isSiteAdmin" class="panel-card">
+          <h2>{{ isSiteAdmin ? '奖项管理' : '奖项展示' }}</h2>
+          <form v-if="isSiteAdmin" class="award-form" @submit.prevent="addAward">
             <input v-model.trim="awardForm.title" placeholder="奖项名称（必填）" required />
             <select v-model="awardForm.award_type" aria-label="奖项分类">
               <option value="team">团队赛</option>
@@ -320,7 +321,7 @@
               <h3><span v-if="isPinned(a)" class="pin-badge">置顶</span>{{ a.title }}</h3>
               <p class="meta"><span class="award-type-label">{{ awardTypeLabel(a) }}</span><span :class="['award-level-label', awardLevelClass(a)]">{{ normalizeAwardLevel(a.level) }}</span>{{ [a.year, a.organizer].filter(Boolean).join(' | ') || '未填写详情' }}</p>
               <p>{{ a.description || '-' }}</p>
-              <div class="row top-gap" v-if="isAdmin">
+              <div class="row top-gap" v-if="isSiteAdmin">
                 <button type="button" class="ghost" @click="editAward(a)">编辑历史信息</button>
                 <button type="button" class="ghost" @click="toggleAwardPinned(a)">{{ isPinned(a) ? '取消置顶' : '置顶' }}</button>
                 <button type="button" class="danger" @click="removeAward(a.id)">删除</button>
@@ -329,9 +330,9 @@
           </div>
         </article>
 
-        <article v-if="activeFeature === 'seniors'" class="panel-card">
-          <h2>{{ isAdmin ? '前辈墙管理' : '前辈墙' }}</h2>
-          <form v-if="isAdmin" class="award-form" @submit.prevent="addSenior">
+        <article v-if="activeFeature === 'seniors' && isSiteAdmin" class="panel-card">
+          <h2>{{ isSiteAdmin ? '前辈墙管理' : '前辈墙' }}</h2>
+          <form v-if="isSiteAdmin" class="award-form" @submit.prevent="addSenior">
             <input v-model.trim="seniorForm.name" placeholder="姓名（必填）" required />
             <select v-model="seniorForm.grade">
               <option v-for="grade in seniorGradeOptions" :key="grade" :value="grade">{{ grade }}</option>
@@ -368,13 +369,13 @@
                 <p>{{ s.intro || '-' }}</p>
                 <p class="meta">成果：{{ s.achievements || '-' }}</p>
                 <p class="meta">寄语：{{ s.advice || '-' }}</p>
-                <div class="row top-gap" v-if="isAdmin">
+                <div class="row top-gap" v-if="isSiteAdmin">
                   <button type="button" @click="startSeniorEdit(s)">编辑</button>
                   <button type="button" class="danger" @click="removeSenior(s.id)">删除</button>
                 </div>
               </template>
 
-              <template v-else-if="isAdmin">
+              <template v-else-if="isSiteAdmin">
               <div class="senior-photo-wrap">
                 <img v-if="getSeniorDraft(s).photo_url" class="senior-photo" :src="getSeniorDraft(s).photo_url" :alt="getSeniorDraft(s).name || s.name" />
               </div>
@@ -417,7 +418,7 @@
           </div>
         </article>
 
-        <article v-if="activeFeature === 'recruit'" class="panel-card">
+        <article v-if="activeFeature === 'recruit' && isSiteAdmin" class="panel-card">
           <h2>报名管理</h2>
           <p class="hint">这里可以查看所有前台提交的招新报名信息，支持按姓名、学号、堂口、联系方式搜索，也可以删除无效报名。</p>
           <div class="row top-gap">
@@ -474,58 +475,193 @@
           </div>
         </article>
 
-        <article v-if="activeFeature === 'admins'" class="panel-card">
-          <h2>Admin Login & Users</h2>
+
+
+        <article v-if="activeFeature === 'blogSite' && isSuperAdmin" class="panel-card">
+          <h2>博客站开放状态</h2>
+          <p class="hint">超级管理员可以临时关闭博客站对外访问；关闭后普通用户无法进入博客首页、登录注册、文章、空间、私信和群聊接口，但数据库、上传图片、文章、聊天记录和缓存不会被删除。</p>
+          <div class="award-form">
+            <label class="check-row"><input type="checkbox" v-model="blogSiteState.open" /> 对外开放博客站</label>
+            <textarea v-model.trim="blogSiteState.notice" rows="3" placeholder="关闭时展示给访客的提示，例如：博客站维护中，暂不对外开放，请稍后再试。"></textarea>
+            <div class="row top-gap">
+              <button type="button" @click="saveBlogSiteState">保存开放状态</button>
+              <a class="link-mini" href="/blog" target="_blank" rel="noopener">打开博客首页</a>
+            </div>
+            <p class="hint">当前状态：<strong>{{ blogSiteState.open ? '开放中' : '已关闭' }}</strong>；最后更新：{{ formatDateTime(blogSiteState.updated_at) || '-' }} {{ blogSiteState.updated_by ? (' / ' + blogSiteState.updated_by) : '' }}</p>
+            <p class="hint">{{ blogSiteStateText }}</p>
+          </div>
+        </article>
+
+        <article v-if="activeFeature === 'communityUsers' && isBlogAdmin" class="panel-card community-admin-panel">
+          <h2>博客用户管理</h2>
+          <p class="hint">权限分层：新人注册默认进入“待审核”；博客站管理员或超级管理员批准后才能登录；驳回后 ID 释放，需要对方重新注册。</p>
+
+          <form class="award-form community-user-create" @submit.prevent="addCommunityUser">
+            <input v-model.trim="communityUserForm.user_id" placeholder="用户 ID（3-32 位字母/数字/_/-）" />
+            <input v-model.trim="communityUserForm.nickname" placeholder="昵称" />
+            <input v-model="communityUserForm.password" type="password" autocomplete="new-password" placeholder="初始密码（至少 8 位）" />
+            <select v-model="communityUserForm.role">
+              <option v-for="role in communityRoleSelectOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
+            </select>
+            <select v-model="communityUserForm.status">
+              <option v-for="status in communityStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
+            </select>
+            <button type="submit">创建博客用户</button>
+          </form>
+
+          <div class="row top-gap">
+            <input v-model.trim="communityUserKeyword" placeholder="搜索 ID / 昵称 / 简介" @keyup.enter="fetchCommunityUsers" />
+            <button type="button" @click="fetchCommunityUsers">刷新用户列表</button>
+            <span class="hint">共 {{ communityUserTotal }} 个用户</span>
+          </div>
+          <p class="hint">{{ communityUserText }}</p>
+
+          <div class="recruit-groups community-user-grid">
+            <section class="group-card community-user-card" v-for="user in communityUsers" :key="user.user_pk || user.id">
+              <div class="community-user-head">
+                <span class="community-avatar" :class="{ 'has-img': !!user.avatar_url }">
+                  <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.nickname" />
+                  <b v-else>{{ (user.nickname || user.user_id || '?').slice(0, 1).toUpperCase() }}</b>
+                </span>
+                <div>
+                  <h3>{{ user.nickname || user.user_id }}</h3>
+                  <p class="meta">ID：{{ user.user_id || user.id }} | 角色：{{ user.role_label || communityUserRoleLabel(user.role) }} | 状态：{{ user.status_label || communityUserStatusLabel(user.status) }}</p>
+                </div>
+              </div>
+              <p class="meta">注册：{{ formatDateTime(user.created_at) || '-' }}；最后登录：{{ formatDateTime(user.last_login_at) || '-' }}</p>
+              <p v-if="user.bio">简介：{{ user.bio }}</p>
+              <div class="community-stat-line">
+                <span>文章 {{ communityUserStat(user, 'articles') }}</span>
+                <span>评论 {{ communityUserStat(user, 'comments') }}</span>
+                <span>粉丝 {{ communityUserStat(user, 'followers') }}</span>
+                <span>私信 {{ communityUserStat(user, 'private_messages') }}</span>
+                <span>群聊 {{ communityUserStat(user, 'group_messages') }}</span>
+              </div>
+              <div class="community-user-controls">
+                <label>状态
+                  <select :value="user.status" @change="changeCommunityUserStatus(user, $event.target.value)">
+                    <option v-for="status in communityStatusControlOptions(user)" :key="status.value" :value="status.value">{{ status.label }}</option>
+                    <option v-if="user.status === 'deleted'" value="deleted">已删除</option>
+                  </select>
+                </label>
+                <label>角色
+                  <select :value="user.role" @change="changeCommunityUserRole(user, $event.target.value)">
+                    <option v-for="role in communityRoleSelectOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
+                  </select>
+                </label>
+              </div>
+              <div class="row top-gap" v-if="isPendingCommunityUser(user)">
+                <button type="button" @click="approveCommunityUser(user)">批准注册</button>
+                <button type="button" class="danger" @click="rejectCommunityUser(user)">驳回申请</button>
+                <span class="hint">通过后用户才能登录；驳回后该 ID 释放，需要重新注册。</span>
+              </div>
+              <div class="row top-gap">
+                <button type="button" class="ghost" @click="promptResetCommunityPassword(user)">重置密码</button>
+                <button type="button" class="danger" @click="deleteCommunityUser(user)">删除用户</button>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article v-if="activeFeature === 'superAudit' && isSuperAdmin" class="panel-card super-audit-panel">
+          <h2>超级管理员审计中心</h2>
+          <p class="hint">该模块只对超级管理员开放。普通管理员不会显示入口，也无法调用接口查看聊天记录。</p>
+          <div class="row top-gap">
+            <button type="button" @click="fetchAuditConversations">刷新私信会话</button>
+            <button type="button" class="ghost" @click="fetchAuditGroups">刷新群聊</button>
+          </div>
+          <p class="hint">{{ auditText }}</p>
+
+          <div class="audit-layout">
+            <section class="audit-list-card">
+              <h3>私信会话</h3>
+              <div class="audit-list">
+                <button type="button" class="audit-row" v-for="conv in auditConversations" :key="conv.id" @click="openAuditConversation(conv)">
+                  <strong>{{ auditParticipants(conv) }}</strong>
+                  <span>{{ conv.message_count || 0 }} 条 | {{ formatDateTime(conv.last_message_at || conv.created_at) }}</span>
+                  <em>{{ (conv.last_message && conv.last_message.content) || '暂无消息' }}</em>
+                </button>
+                <p v-if="auditConversations.length === 0" class="hint">暂无私信会话</p>
+              </div>
+            </section>
+
+            <section class="audit-list-card">
+              <h3>群聊</h3>
+              <div class="audit-list">
+                <button type="button" class="audit-row" v-for="group in auditGroups" :key="group.id" @click="openAuditGroup(group)">
+                  <strong>{{ group.name || group.id }}</strong>
+                  <span>{{ group.member_count || 0 }} 人 | {{ group.message_count || 0 }} 条 | {{ formatDateTime(group.created_at) }}</span>
+                  <em>{{ group.intro || (group.last_message && group.last_message.content) || '暂无简介' }}</em>
+                </button>
+                <p v-if="auditGroups.length === 0" class="hint">暂无群聊</p>
+              </div>
+            </section>
+
+            <section class="audit-message-card">
+              <h3>{{ auditTarget ? auditTarget.title : '请选择一个会话查看记录' }}</h3>
+              <div class="audit-message-list">
+                <div class="audit-message" v-for="msg in auditMessages" :key="msg.id">
+                  <div class="audit-message-head">
+                    <strong>{{ auditSenderName(msg) }}</strong>
+                    <span>{{ formatDateTime(msg.created_at) }}</span>
+                  </div>
+                  <p>{{ msg.content }}</p>
+                </div>
+                <p v-if="auditMessages.length === 0" class="hint">暂无聊天记录</p>
+              </div>
+            </section>
+          </div>
+        </article>
+        <article v-if="activeFeature === 'admins' && (isSuperAdmin || !isAdmin)" class="panel-card">
+          <h2>管理员 / 超级管理员账号</h2>
           <template v-if="!isAdmin">
-            <p class="hint">Login with an administrator account. Super administrators can add, delete, reset password, and change roles for other admin accounts.</p>
+            <p class="hint">超级管理员登录后可分别创建宣传站管理员和博客站管理员；超级管理员账号全站唯一，不与两个站点管理员互通。</p>
             <form class="award-form" @submit.prevent="adminSubmitLogin">
-              <input v-model.trim="loginForm.username" autocomplete="username" placeholder="Admin username" />
-              <input v-model="loginForm.password" type="password" autocomplete="current-password" placeholder="Admin password" />
-              <button type="submit">Login</button>
+              <input v-model.trim="loginForm.username" autocomplete="username" placeholder="管理员账号" />
+              <input v-model="loginForm.password" type="password" autocomplete="current-password" placeholder="管理员密码" />
+              <button type="submit">登录</button>
             </form>
             <p class="hint">{{ loginText }}</p>
           </template>
 
           <template v-else>
-            <p class="hint">Current admin: {{ currentAdmin && (currentAdmin.display_name || currentAdmin.username) }}</p>
-            <h3>Add admin user</h3>
+            <p class="hint">当前管理员： {{ currentAdmin && (currentAdmin.display_name || currentAdmin.username) }}（{{ currentAdmin && (currentAdmin.role_label || currentAdmin.role) }}）</p>
+            <h3>添加站点管理员</h3>
             <form class="award-form" @submit.prevent="addAdminUser">
-              <input v-model.trim="adminUserForm.username" placeholder="Username: letters/numbers/_/./-/@" />
-              <input v-model.trim="adminUserForm.display_name" placeholder="Display name (optional)" />
+              <input v-model.trim="adminUserForm.username" placeholder="账号：字母/数字/_/./-/@" />
+              <input v-model.trim="adminUserForm.display_name" placeholder="显示名称（可选）" />
               <select v-model="adminUserForm.role">
-                <option value="admin">Admin</option>
-                <option value="superadmin">Super Admin</option>
+                <option v-for="role in adminUserRoleOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
               </select>
-              <input v-model="adminUserForm.password" type="password" autocomplete="new-password" placeholder="Initial password, at least 6 chars" />
-              <button type="submit">Add user</button>
+              <input v-model="adminUserForm.password" type="password" autocomplete="new-password" placeholder="初始密码，至少 6 位" />
+              <button type="submit">添加账号</button>
             </form>
             <p class="hint">{{ adminUserText }}</p>
 
-            <h3>Admin users</h3>
+            <h3>站点管理员列表</h3>
             <div class="recruit-groups">
               <section class="group-card" v-for="user in adminUsers" :key="user.id">
                 <h3>{{ user.display_name || user.username }}</h3>
-                <p class="meta">Username: {{ user.username }} | Role: {{ user.role }}</p>
-                <label class="meta">Role:
-                  <select :value="user.role" @change="changeAdminRole(user, $event.target.value)">
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
+                <p class="meta">账号： {{ user.username }} | 角色： {{ user.role_label || user.role }}</p>
+                <label class="meta">角色：
+                  <select :value="user.role" :disabled="user.role === 'superadmin'" @change="changeAdminRole(user, $event.target.value)">
+                    <option v-for="role in adminRoleOptionsFor(user)" :key="role.value" :value="role.value">{{ role.label }}</option>
                   </select>
                 </label>
-                <p class="meta">Created: {{ user.created_at || '-' }}</p>
-                <p class="meta">Last login: {{ user.last_login_at || '-' }}</p>
+                <p class="meta">创建时间： {{ user.created_at || '-' }}</p>
+                <p class="meta">最后登录： {{ user.last_login_at || '-' }}</p>
                 <div class="row top-gap">
-                  <button class="ghost" @click="promptResetAdminPassword(user)">Reset password</button>
-                  <button class="danger" @click="deleteAdminUser(user.id)">Delete user</button>
+                  <button class="ghost" @click="promptResetAdminPassword(user)">重置密码</button>
+                  <button class="danger" @click="deleteAdminUser(user.id)">删除账号</button>
                 </div>
               </section>
             </div>
           </template>
         </article>
 
-        <article v-if="activeFeature === 'knowledge'" class="panel-card">
+        <article v-if="activeFeature === 'knowledge' && isSiteAdmin" class="panel-card">
           <h2>知识库管理</h2>
-          <p v-if="!isAdmin" class="hint">该模块需要后台权限，请先登录。</p>
+          <p v-if="!isSiteAdmin" class="hint">该模块需要后台权限，请先登录。</p>
           <template v-else>
             <div class="row">
               <button @click="refreshStatus">刷新状态</button>
@@ -549,6 +685,12 @@
   <script src="/static/app.js"></script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 

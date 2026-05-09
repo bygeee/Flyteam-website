@@ -7,7 +7,7 @@ if (form && msg) {
     const nickname = document.getElementById("nickname").value.trim();
     const userId = document.getElementById("userId").value.trim();
     const password = document.getElementById("password").value;
-    msg.textContent = "注册中...";
+    msg.textContent = "\u6b63\u5728\u63d0\u4ea4\u6ce8\u518c\u7533\u8bf7...";
     try {
       const res = await fetch("/api/users/register", {
         method: "POST",
@@ -17,10 +17,8 @@ if (form && msg) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "注册失败");
-      msg.textContent = "注册成功，请登录。";
-      setTimeout(() => {
-        window.location.href = "/user-login";
-      }, 700);
+      msg.textContent = data.message || "\u6ce8\u518c\u7533\u8bf7\u5df2\u63d0\u4ea4\uff0c\u8bf7\u7b49\u5f85\u7ba1\u7406\u5458\u5ba1\u6838\u901a\u8fc7\u540e\u518d\u767b\u5f55\u3002";
+      form.reset();
     } catch (err) {
       msg.textContent = err.message || "注册失败";
     }
