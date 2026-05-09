@@ -289,6 +289,23 @@ func (s *Server) adminFromToken(token string) (AdminSession, bool) {
 	if s.cfg.AdminToken != "" && hmac.Equal([]byte(token), []byte(s.cfg.AdminToken)) {
 		return AdminSession{ID: "legacy-token", Username: "legacy-admin", Role: "superadmin", DisplayName: "Token Super Admin"}, true
 	}
+	if s.db != nil {
+		var payload struct {
+			ID          string `json:"id"`
+			Username    string `json:"username"`
+			DisplayName string `json:"display_name"`
+			Role        string `json:"role"`
+			CSRFToken   string `json:"csrf_token"`
+			ExpiresAt   string `json:"expires_at"`
+		}
+		if s.loadCacheJSON("admin_session", token, &payload) {
+			expiresAt, ok := parseCacheTime(payload.ExpiresAt)
+			if ok && time.Now().UTC().Before(expiresAt) {
+				return AdminSession{ID: payload.ID, Username: payload.Username, DisplayName: payload.DisplayName, Role: normalizeRole(payload.Role), CSRFToken: payload.CSRFToken, ExpiresAt: expiresAt}, true
+			}
+			s.deleteCache("admin_session", token)
+		}
+	}
 	s.sessMu.Lock()
 	defer s.sessMu.Unlock()
 	sess, ok := s.sessions[token]
@@ -331,9 +348,13 @@ func (s *Server) issueAdminSession(u AdminUser) (string, AdminSession) {
 		hours = 1
 	}
 	sess := AdminSession{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName, Role: normalizeRole(u.Role), CSRFToken: csrf, ExpiresAt: time.Now().UTC().Add(time.Duration(hours) * time.Hour)}
-	s.sessMu.Lock()
-	s.sessions[token] = sess
-	s.sessMu.Unlock()
+	if s.db != nil {
+		_ = s.saveCacheJSON("admin_session", token, map[string]any{"id": sess.ID, "username": sess.Username, "display_name": sess.DisplayName, "role": sess.Role, "csrf_token": sess.CSRFToken, "expires_at": sess.ExpiresAt.Format(time.RFC3339Nano)}, sess.ExpiresAt)
+	} else {
+		s.sessMu.Lock()
+		s.sessions[token] = sess
+		s.sessMu.Unlock()
+	}
 	return token, sess
 }
 
@@ -376,12 +397,14 @@ func (s *Server) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAdminLogout(w http.ResponseWriter, r *http.Request) {
 	for _, token := range []string{r.Header.Get("X-Admin-Token")} {
 		if token != "" {
+			s.deleteCache("admin_session", token)
 			s.sessMu.Lock()
 			delete(s.sessions, token)
 			s.sessMu.Unlock()
 		}
 	}
 	if c, err := r.Cookie("admin_session"); err == nil {
+		s.deleteCache("admin_session", c.Value)
 		s.sessMu.Lock()
 		delete(s.sessions, c.Value)
 		s.sessMu.Unlock()
@@ -573,11 +596,39 @@ func (s *Server) handleDeleteAdminUser(w http.ResponseWriter, r *http.Request, i
 }
 
 func (s *Server) dropSessionsFor(username string) {
+	s.dropAdminSessionCacheFor(username)
 	s.sessMu.Lock()
 	defer s.sessMu.Unlock()
 	for t, sess := range s.sessions {
 		if strings.EqualFold(sess.Username, username) {
 			delete(s.sessions, t)
 		}
+	}
+}
+
+func (s *Server) dropAdminSessionCacheFor(username string) {
+	if s.db == nil {
+		return
+	}
+	rows, err := s.db.Query(`SELECT key, value_json FROM app_cache WHERE scope='admin_session'`)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	keys := []string{}
+	for rows.Next() {
+		var key, raw string
+		if rows.Scan(&key, &raw) != nil {
+			continue
+		}
+		var payload struct {
+			Username string `json:"username"`
+		}
+		if json.Unmarshal([]byte(raw), &payload) == nil && strings.EqualFold(payload.Username, username) {
+			keys = append(keys, key)
+		}
+	}
+	for _, key := range keys {
+		s.deleteCache("admin_session", key)
 	}
 }

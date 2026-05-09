@@ -31,6 +31,7 @@ type Config struct {
 	ReviewUploadDir       string
 	NewsUploadDir         string
 	BlogUploadDir         string
+	AvatarUploadDir       string
 	DatabaseFile          string
 	RagIndexFile          string
 	TeamContentFile       string
@@ -72,7 +73,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, cfg.BlogUploadDir, filepath.Dir(cfg.RagIndexFile), filepath.Dir(cfg.DatabaseFile)} {
+	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, cfg.BlogUploadDir, cfg.AvatarUploadDir, filepath.Dir(cfg.RagIndexFile), filepath.Dir(cfg.DatabaseFile)} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Fatalf("mkdir %s: %v", dir, err)
 		}
@@ -148,6 +149,7 @@ func LoadConfig() (Config, error) {
 		ReviewUploadDir:       filepath.Join(upload, "review"),
 		NewsUploadDir:         filepath.Join(upload, "news"),
 		BlogUploadDir:         filepath.Join(upload, "blog"),
+		AvatarUploadDir:       filepath.Join(upload, "avatars"),
 		DatabaseFile:          getenv("DATABASE_FILE", filepath.Join(storage, "flyteam.db")),
 		RagIndexFile:          filepath.Join(storage, "rag_index_go.json"),
 		TeamContentFile:       filepath.Join(storage, "team_content.json"),
@@ -304,6 +306,10 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 	}
 	if path == "/editor" && r.Method == http.MethodGet {
 		s.serveStaticHTML(w, r, "editor.html")
+		return
+	}
+	if path == "/account" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "account.html")
 		return
 	}
 	if strings.HasPrefix(path, "/space/") && r.Method == http.MethodGet {
@@ -573,6 +579,9 @@ func clientIP(r *http.Request) string {
 }
 
 func (s *Server) checkRateLimit(key string, limit int, window time.Duration, consume bool) bool {
+	if s.db != nil {
+		return s.checkRateLimitDB(key, limit, window, consume)
+	}
 	s.rateMu.Lock()
 	defer s.rateMu.Unlock()
 	now := time.Now()
@@ -597,6 +606,10 @@ func (s *Server) checkRateLimit(key string, limit int, window time.Duration, con
 }
 
 func (s *Server) clearRateLimit(key string) {
+	if s.db != nil {
+		s.deleteCache("rate", key)
+		return
+	}
 	s.rateMu.Lock()
 	defer s.rateMu.Unlock()
 	delete(s.rate, key)

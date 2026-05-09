@@ -254,6 +254,29 @@ func (s *Server) handleUploadBlogImages(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, 200, map[string]any{"saved_images": urls})
 }
 
+func (s *Server) handleUploadAvatar(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireCommunityUser(w, r)
+	if !ok {
+		return
+	}
+	urls, _, err := saveUploadedFiles(r, s.cfg.AvatarUploadDir, "/uploads/avatars", imageSuffixes, s.cfg.MaxImageUploadBytes, "image", 1)
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+	if len(urls) == 0 {
+		writeError(w, 400, "No valid avatar image uploaded.")
+		return
+	}
+	_, err = s.db.Exec(`UPDATE community_users SET avatar_url=?, updated_at=? WHERE id=?`, urls[0], nowISO(), user.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to update avatar.")
+		return
+	}
+	u, _ := s.loadCommunityUserByPK(user.ID)
+	writeJSON(w, 200, map[string]any{"saved_images": urls, "avatar_url": urls[0], "user": publicCommunityUser(u)})
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a

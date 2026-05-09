@@ -24,6 +24,9 @@ var reservedCommunityEndpoints = []ReservedCommunityEndpoint{
 	{Method: http.MethodPost, Path: "/api/users/login", Module: "user-auth", Phase: "phase-1", Auth: "guest", Summary: "普通用户登录，签发用户会话。"},
 	{Method: http.MethodPost, Path: "/api/users/logout", Module: "user-auth", Phase: "phase-1", Auth: "user", Summary: "普通用户退出登录，清理会话。"},
 	{Method: http.MethodGet, Path: "/api/users/me", Module: "user-auth", Phase: "phase-1", Auth: "user", Summary: "获取当前普通用户资料、权限和统计。"},
+	{Method: http.MethodPut, Path: "/api/users/me/settings", Module: "user-account", Phase: "phase-1", Auth: "user", Summary: "个人中心设置：昵称、账号 ID、头像、简介。"},
+	{Method: http.MethodPut, Path: "/api/users/me/password", Module: "user-account", Phase: "phase-1", Auth: "user", Summary: "修改当前用户密码。"},
+	{Method: http.MethodPost, Path: "/api/upload/avatar", Module: "user-account", Phase: "phase-1", Auth: "user", Summary: "上传当前用户头像。"},
 	{Method: http.MethodGet, Path: "/api/users/{id}", Module: "user-profile", Phase: "phase-1", Auth: "guest", Summary: "公开用户主页资料。"},
 	{Method: http.MethodPut, Path: "/api/users/{id}", Module: "user-profile", Phase: "phase-1", Auth: "owner/admin", Summary: "编辑用户资料，限制只能本人或管理员操作。"},
 
@@ -49,6 +52,12 @@ var reservedCommunityEndpoints = []ReservedCommunityEndpoint{
 	{Method: http.MethodDelete, Path: "/api/social/follows/{id}", Module: "social-follow", Phase: "phase-3", Auth: "user", Summary: "取消关注用户。"},
 	{Method: http.MethodGet, Path: "/api/social/following/{id}", Module: "social-follow", Phase: "phase-3", Auth: "guest", Summary: "查看某用户关注列表。"},
 	{Method: http.MethodGet, Path: "/api/social/followers/{id}", Module: "social-follow", Phase: "phase-3", Auth: "guest", Summary: "查看某用户粉丝列表。"},
+	{Method: http.MethodGet, Path: "/api/friends", Module: "friendship", Phase: "phase-3", Auth: "user", Summary: "好友列表，用于选择好友私聊或拉群。"},
+	{Method: http.MethodPost, Path: "/api/friends/requests", Module: "friendship", Phase: "phase-3", Auth: "user", Summary: "发送好友申请，等待对方同意。"},
+	{Method: http.MethodGet, Path: "/api/friends/requests", Module: "friendship", Phase: "phase-3", Auth: "user", Summary: "查看收到/发出的好友申请。"},
+	{Method: http.MethodPost, Path: "/api/friends/requests/{id}/accept", Module: "friendship", Phase: "phase-3", Auth: "receiver", Summary: "同意好友申请并建立双向好友关系。"},
+	{Method: http.MethodPost, Path: "/api/friends/requests/{id}/reject", Module: "friendship", Phase: "phase-3", Auth: "receiver/requester", Summary: "拒绝或撤销好友申请。"},
+	{Method: http.MethodDelete, Path: "/api/friends/{id}", Module: "friendship", Phase: "phase-3", Auth: "user", Summary: "删除好友关系。"},
 
 	{Method: http.MethodGet, Path: "/api/messages/conversations", Module: "private-message", Phase: "phase-3", Auth: "user", Summary: "私信会话列表。"},
 	{Method: http.MethodPost, Path: "/api/messages/conversations", Module: "private-message", Phase: "phase-3", Auth: "user", Summary: "创建或打开私信会话。"},
@@ -80,6 +89,10 @@ func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path 
 		s.handleUploadBlogImages(w, r)
 		return true
 	}
+	if path == "/api/upload/avatar" && r.Method == http.MethodPost {
+		s.handleUploadAvatar(w, r)
+		return true
+	}
 	if path == "/api/users/register" && r.Method == http.MethodPost {
 		s.handleCommunityRegister(w, r)
 		return true
@@ -94,6 +107,14 @@ func (s *Server) routeCommunityAPI(w http.ResponseWriter, r *http.Request, path 
 	}
 	if path == "/api/users/me" && r.Method == http.MethodGet {
 		s.handleCommunityMe(w, r)
+		return true
+	}
+	if path == "/api/users/me/settings" && r.Method == http.MethodPut {
+		s.handleUpdateCommunityAccount(w, r)
+		return true
+	}
+	if path == "/api/users/me/password" && r.Method == http.MethodPut {
+		s.handleUpdateCommunityPassword(w, r)
 		return true
 	}
 	if strings.HasPrefix(path, "/api/users/") {
@@ -176,6 +197,9 @@ var dlImplementedCommunityEndpoints = map[string]bool{
 	http.MethodPost + " /api/users/login":                          true,
 	http.MethodPost + " /api/users/logout":                         true,
 	http.MethodGet + " /api/users/me":                              true,
+	http.MethodPut + " /api/users/me/settings":                     true,
+	http.MethodPut + " /api/users/me/password":                     true,
+	http.MethodPost + " /api/upload/avatar":                        true,
 	http.MethodGet + " /api/users/{id}":                            true,
 	http.MethodPut + " /api/users/{id}":                            true,
 	http.MethodGet + " /api/blog/articles":                         true,
@@ -198,6 +222,12 @@ var dlImplementedCommunityEndpoints = map[string]bool{
 	http.MethodDelete + " /api/social/follows/{id}":                true,
 	http.MethodGet + " /api/social/following/{id}":                 true,
 	http.MethodGet + " /api/social/followers/{id}":                 true,
+	http.MethodGet + " /api/friends":                               true,
+	http.MethodPost + " /api/friends/requests":                     true,
+	http.MethodGet + " /api/friends/requests":                      true,
+	http.MethodPost + " /api/friends/requests/{id}/accept":         true,
+	http.MethodPost + " /api/friends/requests/{id}/reject":         true,
+	http.MethodDelete + " /api/friends/{id}":                       true,
 	http.MethodGet + " /api/messages/conversations":                true,
 	http.MethodPost + " /api/messages/conversations":               true,
 	http.MethodGet + " /api/messages/conversations/{id}":           true,

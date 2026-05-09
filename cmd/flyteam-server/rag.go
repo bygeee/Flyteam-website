@@ -80,19 +80,29 @@ func NewRagService(cfg Config, db *sql.DB) *RagService {
 	return rs
 }
 
+func normalizeRagIndex(idx *RagIndex) {
+	if idx.Files == nil {
+		idx.Files = map[string]RagFile{}
+	}
+	if idx.Chunks == nil {
+		idx.Chunks = []RagChunk{}
+	}
+}
+
 func (r *RagService) load() error {
 	if r.db != nil {
+		var idx RagIndex
+		if loadCacheJSONDB(r.db, "rag", "index", &idx) {
+			normalizeRagIndex(&idx)
+			r.Index = idx
+			return nil
+		}
 		var raw string
 		if err := r.db.QueryRow(`SELECT value_json FROM app_kv WHERE key='rag_index'`).Scan(&raw); err == nil && strings.TrimSpace(raw) != "" {
-			var idx RagIndex
 			if json.Unmarshal([]byte(raw), &idx) == nil {
-				if idx.Files == nil {
-					idx.Files = map[string]RagFile{}
-				}
-				if idx.Chunks == nil {
-					idx.Chunks = []RagChunk{}
-				}
+				normalizeRagIndex(&idx)
 				r.Index = idx
+				_ = r.save()
 				return nil
 			}
 		}
@@ -103,12 +113,7 @@ func (r *RagService) load() error {
 	}
 	var idx RagIndex
 	if json.Unmarshal(b, &idx) == nil {
-		if idx.Files == nil {
-			idx.Files = map[string]RagFile{}
-		}
-		if idx.Chunks == nil {
-			idx.Chunks = []RagChunk{}
-		}
+		normalizeRagIndex(&idx)
 		r.Index = idx
 		if r.db != nil {
 			_ = r.save()
@@ -119,13 +124,7 @@ func (r *RagService) load() error {
 
 func (r *RagService) save() error {
 	if r.db != nil {
-		b, err := json.MarshalIndent(r.Index, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, err = r.db.Exec(`INSERT INTO app_kv(key,value_json,updated_at) VALUES('rag_index',?,?)
-			ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at`, string(b), nowISO())
-		return err
+		return saveCacheJSONDB(r.db, "rag", "index", r.Index, time.Time{})
 	}
 	return writeJSONAtomic(r.cfg.RagIndexFile, r.Index)
 }

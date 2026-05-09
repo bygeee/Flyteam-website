@@ -118,6 +118,24 @@ func (s *Server) handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	visibility := normalizeGroupVisibility(req.Visibility)
+	memberIDs := []string{}
+	seenMembers := map[string]bool{user.ID: true}
+	for _, rawMember := range req.MemberUserIDs {
+		memberID, err := s.resolveCommunityUserPK(rawMember)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Selected group member not found.")
+			return
+		}
+		if seenMembers[memberID] {
+			continue
+		}
+		if !s.areFriends(user.ID, memberID) && !s.canModerateCommunity(r, user) {
+			writeError(w, http.StatusForbidden, "Only friends can be invited to a group.")
+			return
+		}
+		seenMembers[memberID] = true
+		memberIDs = append(memberIDs, memberID)
+	}
 	id := randomHex(8)
 	now := nowISO()
 	tx, err := s.db.Begin()
@@ -133,6 +151,12 @@ func (s *Server) handleCreateGroup(w http.ResponseWriter, r *http.Request) {
 	if _, err := tx.Exec(`INSERT INTO chat_group_members(group_id, user_id, role, status, joined_at) VALUES(?,?, 'owner', 'active', ?)`, id, user.ID, now); err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to create group owner.")
 		return
+	}
+	for _, memberID := range memberIDs {
+		if _, err := tx.Exec(`INSERT OR IGNORE INTO chat_group_members(group_id, user_id, role, status, joined_at) VALUES(?,?, 'member', 'active', ?)`, id, memberID, now); err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to add group member.")
+			return
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to create group.")
@@ -271,6 +295,10 @@ func (s *Server) handleJoinGroup(w http.ResponseWriter, r *http.Request, groupID
 			writeError(w, http.StatusNotFound, "Target user not found.")
 			return
 		}
+		if !s.areFriends(user.ID, resolved) && !s.canModerateCommunity(r, user) {
+			writeError(w, http.StatusForbidden, "Only friends can be invited to a group.")
+			return
+		}
 		targetID = resolved
 	}
 	if group["visibility"] == "private" && targetID == user.ID && group["my_status"] != "active" {
@@ -321,7 +349,8 @@ func (s *Server) handleRemoveGroupMember(w http.ResponseWriter, r *http.Request,
 }
 
 func (s *Server) handleGroupMessages(w http.ResponseWriter, r *http.Request, groupID string) {
-	if _, _, ok := s.requireActiveGroupMember(w, r, groupID); !ok {
+	user, _, ok := s.requireActiveGroupMember(w, r, groupID)
+	if !ok {
 		return
 	}
 	limit := parseLimit(r, 50, 100)
@@ -340,7 +369,7 @@ func (s *Server) handleGroupMessages(w http.ResponseWriter, r *http.Request, gro
 			writeError(w, http.StatusInternalServerError, "Failed to read group messages.")
 			return
 		}
-		items = append(items, map[string]any{"id": id, "content": content, "created_at": createdAt, "sender": map[string]any{"id": senderID, "user_pk": senderPK, "nickname": nickname, "avatar_url": avatar}})
+		items = append(items, map[string]any{"id": id, "content": content, "created_at": createdAt, "sender": map[string]any{"id": senderID, "user_pk": senderPK, "nickname": nickname, "avatar_url": avatar}, "mine": senderPK == user.ID})
 	}
 	reverseMaps(items)
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})

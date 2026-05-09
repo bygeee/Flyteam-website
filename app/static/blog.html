@@ -1,7 +1,103 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Flyteam 博客广场</title><link rel="stylesheet" href="/static/public.css"/><link rel="stylesheet" href="/static/community.css"/></head>
-<body class="community-page"><header class="topbar"><div class="topbar-inner"><a class="brand" href="/">Flyteam</a><nav class="nav"><a href="/">首页</a><a href="/blog">博客</a><a href="/messages">私信</a><a href="/groups">群聊</a><a href="/user-login">登录</a><a href="/user-register">注册</a></nav></div></header>
-<main class="community-shell"><section class="community-hero"><p class="sub">FLYTEAM COMMUNITY</p><h1>博客广场</h1><p>阅读团队成员发布的公开文章。登录后可以写文章、评论、点赞、收藏、关注与私信。</p><div class="community-actions"><a class="community-btn primary" href="/editor">写文章</a><a class="community-btn" href="/messages">私信中心</a><a class="community-btn" href="/groups">团队群聊</a></div></section>
-<section class="community-card"><div class="community-panel-head"><div><h2>全站搜索</h2><p>搜索文章、用户和标签。</p></div></div><div class="community-form"><input id="communitySearchInput" placeholder="输入关键词，例如 Go / 竞赛 / 成员昵称"/><button id="communitySearchBtn" class="community-btn primary" type="button">搜索</button></div><div id="communitySearchResults" class="community-results"></div></section>
-<section class="community-layout-two"><section class="community-card"><div class="community-panel-head"><div><h2>最新文章</h2><p id="blogStatus">正在加载文章...</p></div><a class="community-btn primary" href="/editor">登录后写文章</a></div><div id="blogList" class="article-grid"></div></section><aside class="community-card"><div class="community-panel-head stacked"><div><h2>高热推荐</h2><p>按浏览、点赞、收藏和评论综合推荐。</p></div></div><div id="blogRecommendations" class="community-list compact"></div></aside></section></main><script src="/static/blog.js"></script></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 博客广场</title>
+  <link rel="stylesheet" href="/static/public.css" />
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body class="community-page blog-home">
+  <header class="topbar blog-topbar">
+    <div class="topbar-inner blog-topbar-inner">
+      <a class="brand" href="/">Flyteam</a>
+      <nav class="nav blog-nav">
+        <a href="/">首页</a>
+        <a class="active" href="/blog">博客</a>
+        <a href="/editor">写文章</a>
+        <a href="/messages">私信</a>
+        <a href="/groups">群聊</a>
+        <a href="/account">个人中心</a><a href="/user-login">登录</a>
+        <a href="/user-register">注册</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="blog-shell">
+    <section class="blog-hero-card">
+      <div>
+        <p class="blog-eyebrow">FLYTEAM COMMUNITY BLOG</p>
+        <h1>把每一次复盘，写成下一次突破。</h1>
+        <p class="blog-hero-desc">成员文章、技术笔记、赛事复盘、经验沉淀集中展示。未登录可阅读，登录后可发布、评论、关注和私信。</p>
+      </div>
+      <div class="blog-hero-actions">
+        <a class="community-btn primary" href="/editor">开始写文章</a>
+        <a class="community-btn" href="/user-register">注册账号</a>
+      </div>
+    </section>
+
+    <section class="blog-dashboard">
+      <aside class="blog-sidebar left">
+        <section class="blog-widget blogger-widget">
+          <div class="blogger-avatar">F</div>
+          <h2>Flyteam Blog</h2>
+          <p>安全技术、团队学习、比赛复盘与成长记录。</p>
+          <div class="blogger-stats">
+            <span><b id="blogArticleTotal">0</b>文章</span>
+            <span><b id="blogReadTotal">0</b>阅读</span>
+          </div>
+        </section>
+        <section class="blog-widget quick-widget">
+          <h3>快捷入口</h3>
+          <a href="/editor">✍ 发布文章</a>
+          <a href="/messages">💬 私信中心</a>
+          <a href="/groups">👥 团队群聊</a>
+          <a href="/user-login">🔐 登录账号</a>
+        </section>
+        <section class="blog-widget tip-widget">
+          <h3>写作建议</h3>
+          <p>推荐结构：问题背景 → 环境/过程 → 关键代码/截图 → 结论复盘。</p>
+        </section>
+      </aside>
+
+      <section class="blog-main-feed">
+        <div class="blog-feed-toolbar">
+          <div>
+            <p class="blog-eyebrow">RECENT POSTS</p>
+            <h2>最新发布</h2>
+            <p id="blogStatus">正在加载文章...</p>
+          </div>
+          <div class="blog-sort-pills" aria-label="文章视图">
+            <span class="on">最新</span>
+            <span>阅读</span>
+            <span>推荐</span>
+          </div>
+        </div>
+        <div id="blogList" class="blog-feed-list"></div>
+      </section>
+
+      <aside class="blog-sidebar right">
+        <section class="blog-widget search-widget">
+          <h3>站内搜索</h3>
+          <div class="blog-search-box">
+            <input id="communitySearchInput" placeholder="搜索文章 / 用户 / 标签" />
+            <button id="communitySearchBtn" type="button">搜索</button>
+          </div>
+          <div id="communitySearchResults" class="blog-search-results"></div>
+        </section>
+        <section class="blog-widget">
+          <h3>高热推荐</h3>
+          <div id="blogRecommendations" class="blog-recommend-list"></div>
+        </section>
+        <section class="blog-widget">
+          <h3>热门标签</h3>
+          <div id="blogTags" class="blog-tag-cloud">
+            <span>CTF</span><span>Web</span><span>Go</span><span>Reverse</span><span>Crypto</span><span>复盘</span>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+  <script src="/static/blog.js"></script>
+</body>
+</html>

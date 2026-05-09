@@ -32,7 +32,41 @@ func (s *Server) captchaHash(token, answer string) string {
 	mac.Write([]byte(token + ":" + strings.ToLower(strings.TrimSpace(answer))))
 	return hex.EncodeToString(mac.Sum(nil))
 }
+func (s *Server) saveRecruitCaptchaCache(token string, entry CaptchaEntry) {
+	if s.db == nil {
+		return
+	}
+	payload := map[string]any{
+		"answer_hash": entry.AnswerHash,
+		"ip":          entry.IP,
+		"attempts":    entry.Attempts,
+		"expires_at":  entry.ExpiresAt.UTC().Format(time.RFC3339Nano),
+	}
+	_ = s.saveCacheJSON("captcha", token, payload, entry.ExpiresAt)
+}
+
+func (s *Server) loadRecruitCaptchaCache(token string) (CaptchaEntry, bool) {
+	var payload struct {
+		AnswerHash string `json:"answer_hash"`
+		IP         string `json:"ip"`
+		Attempts   int    `json:"attempts"`
+		ExpiresAt  string `json:"expires_at"`
+	}
+	if !s.loadCacheJSON("captcha", token, &payload) {
+		return CaptchaEntry{}, false
+	}
+	expiresAt, ok := parseCacheTime(payload.ExpiresAt)
+	if !ok {
+		return CaptchaEntry{}, false
+	}
+	return CaptchaEntry{AnswerHash: payload.AnswerHash, IP: payload.IP, Attempts: payload.Attempts, ExpiresAt: expiresAt}, true
+}
+
 func (s *Server) cleanupCaptchas() {
+	if s.db != nil {
+		s.cleanupCache("captcha")
+		return
+	}
 	now := time.Now()
 	s.captchaMu.Lock()
 	defer s.captchaMu.Unlock()
@@ -199,9 +233,13 @@ func (s *Server) handleRecruitCaptcha(w http.ResponseWriter, r *http.Request) {
 	challenge, ans := generateCCodeCaptcha()
 	token := randomHex(24)
 	entry := CaptchaEntry{AnswerHash: s.captchaHash(token, fmt.Sprint(ans)), ExpiresAt: time.Now().Add(recruitCaptchaTTL), IP: ip}
-	s.captchaMu.Lock()
-	s.captchas[token] = entry
-	s.captchaMu.Unlock()
+	if s.db != nil {
+		s.saveRecruitCaptchaCache(token, entry)
+	} else {
+		s.captchaMu.Lock()
+		s.captchas[token] = entry
+		s.captchaMu.Unlock()
+	}
 	writeJSON(w, 200, map[string]any{"token": token, "challenge": challenge, "expires_in": 180, "captcha_type": "c_output"})
 }
 func (s *Server) verifyRecruitCaptcha(token, answer, ip string) bool {
@@ -210,6 +248,18 @@ func (s *Server) verifyRecruitCaptcha(token, answer, ip string) bool {
 	answer = strings.TrimSpace(answer)
 	if token == "" || answer == "" {
 		return false
+	}
+	if s.db != nil {
+		entry, ok := s.loadRecruitCaptchaCache(token)
+		if !ok {
+			return false
+		}
+		s.deleteCache("captcha", token)
+		if time.Now().After(entry.ExpiresAt) || entry.IP != ip {
+			return false
+		}
+		expected := entry.AnswerHash
+		return hmac.Equal([]byte(expected), []byte(s.captchaHash(token, answer)))
 	}
 	s.captchaMu.Lock()
 	defer s.captchaMu.Unlock()

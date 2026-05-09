@@ -25,12 +25,28 @@ type CommunityProfileUpdateRequest struct {
 	Bio       string `json:"bio"`
 }
 
+type CommunityAccountUpdateRequest struct {
+	Nickname  string `json:"nickname"`
+	UserID    string `json:"user_id"`
+	AvatarURL string `json:"avatar_url"`
+	Bio       string `json:"bio"`
+}
+
+type CommunityPasswordUpdateRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
 var communityUserIDRe = regexp.MustCompile(`^[0-9A-Za-z_\-]{3,32}$`)
+var reservedCommunityUserIDs = map[string]bool{"admin": true, "root": true, "api": true, "static": true, "uploads": true, "login": true, "blog": true, "editor": true, "account": true, "messages": true, "groups": true, "user-login": true, "user-register": true}
 
 func validateCommunityUserID(userID string) (string, error) {
 	clean := strings.ToLower(strings.TrimSpace(userID))
 	if !communityUserIDRe.MatchString(clean) {
 		return "", errors.New("User ID must be 3-32 chars: letters, numbers, _, -.")
+	}
+	if reservedCommunityUserIDs[clean] {
+		return "", errors.New("This User ID is reserved.")
 	}
 	return clean, nil
 }
@@ -246,4 +262,88 @@ func (s *Server) handleUpdateCommunityUser(w http.ResponseWriter, r *http.Reques
 	}
 	u, _ := s.loadCommunityUserByPK(pk)
 	writeJSON(w, http.StatusOK, map[string]any{"user": publicCommunityUser(u), "stats": s.communityProfileStats(pk), "is_owner": true})
+}
+
+func (s *Server) handleUpdateCommunityAccount(w http.ResponseWriter, r *http.Request) {
+	current, ok := s.requireCommunityUser(w, r)
+	if !ok {
+		return
+	}
+	var req CommunityAccountUpdateRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON.")
+		return
+	}
+	nickname, err := validateCommunityNickname(req.Nickname)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	userID, err := validateCommunityUserID(firstNonEmpty(req.UserID, current.UserID))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	bio := strings.TrimSpace(req.Bio)
+	if len([]rune(bio)) > 500 {
+		writeError(w, http.StatusBadRequest, "Bio must be 500 characters or fewer.")
+		return
+	}
+	avatarURL := strings.TrimSpace(req.AvatarURL)
+	if len([]rune(avatarURL)) > 500 {
+		writeError(w, http.StatusBadRequest, "Avatar URL is too long.")
+		return
+	}
+	if userID != current.UserID {
+		var exists int
+		_ = s.db.QueryRow(`SELECT COUNT(*) FROM community_users WHERE user_id=? AND id!=?`, userID, current.ID).Scan(&exists)
+		if exists > 0 {
+			writeError(w, http.StatusConflict, "User ID already exists.")
+			return
+		}
+	}
+	_, err = s.db.Exec(`UPDATE community_users SET user_id=?, nickname=?, avatar_url=?, bio=?, updated_at=? WHERE id=?`, userID, nickname, avatarURL, bio, nowISO(), current.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to save account settings.")
+		return
+	}
+	u, _ := s.loadCommunityUserByPK(current.ID)
+	resp := publicCommunityUser(u)
+	resp["csrf_token"] = current.CSRFToken
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "user": resp, "stats": s.communityProfileStats(current.ID)})
+}
+
+func (s *Server) handleUpdateCommunityPassword(w http.ResponseWriter, r *http.Request) {
+	current, ok := s.requireCommunityUser(w, r)
+	if !ok {
+		return
+	}
+	var req CommunityPasswordUpdateRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON.")
+		return
+	}
+	if req.OldPassword == "" || req.NewPassword == "" {
+		writeError(w, http.StatusBadRequest, "Old password and new password are required.")
+		return
+	}
+	var passwordHash, salt string
+	if err := s.db.QueryRow(`SELECT password_hash, salt FROM community_users WHERE id=?`, current.ID).Scan(&passwordHash, &salt); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to load account.")
+		return
+	}
+	if !verifyPassword(req.OldPassword, salt, passwordHash) {
+		writeError(w, http.StatusUnauthorized, "Old password is incorrect.")
+		return
+	}
+	if err := validateCommunityPassword(req.NewPassword); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	newSalt, newHash := hashPassword(req.NewPassword, "")
+	if _, err := s.db.Exec(`UPDATE community_users SET salt=?, password_hash=?, updated_at=? WHERE id=?`, newSalt, newHash, nowISO(), current.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to update password.")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }

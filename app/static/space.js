@@ -67,6 +67,9 @@ function renderProfile(data) {
     const editor = createNode("a", "community-btn primary", "写文章");
     editor.href = "/editor";
     actions.appendChild(editor);
+    const account = createNode("a", "community-btn", "个人中心");
+    account.href = "/account";
+    actions.appendChild(account);
   } else {
     const follow = document.createElement("button");
     follow.type = "button";

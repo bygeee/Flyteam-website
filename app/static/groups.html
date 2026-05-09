@@ -6,31 +6,78 @@
   <title>Flyteam 群聊</title>
   <link rel="stylesheet" href="/static/community.css" />
 </head>
-<body class="community-page">
-  <main class="community-shell">
-    <header class="community-top">
-      <div><h1>团队群聊</h1><p>创建群、加入公开群并进行站内群聊。</p></div>
-      <nav class="community-nav"><a href="/">首页</a><a href="/messages">私信</a></nav>
+<body class="community-page wechat-page social-chat-page group-chat-page">
+  <main class="wechat-shell">
+    <header class="wechat-top social-hero group-hero">
+      <div>
+        <p class="wechat-kicker">FLYTEAM GROUP HUB</p>
+        <h1>群聊空间</h1>
+        <p>从好友中拉人建群，群成员可以长期交流、沉淀讨论记录。群资料、成员关系、聊天记录全部进入数据库。</p>
+      </div>
+      <nav class="community-nav social-nav">
+        <a href="/">首页</a>
+        <a href="/blog">博客广场</a>
+        <a href="/messages">好友私信</a>
+        <a href="/account">个人中心</a>
+      </nav>
     </header>
-    <input id="userToken" class="community-token" placeholder="临时调试：粘贴 X-User-Token；后续 grand 登录后会自动写入" />
-    <section class="community-grid" style="margin-top:18px">
-      <aside class="community-card">
-        <h2>群列表</h2>
-        <form id="newGroup" class="community-form">
-          <input id="groupName" placeholder="群名称" />
-          <button class="community-btn primary" type="submit">创建</button>
-        </form>
-        <div id="groupList" class="community-list"></div>
+
+    <section class="wechat-layout social-app-layout group-layout">
+      <aside class="wechat-panel social-sidebar">
+        <section class="wechat-card glass-card">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">NEW GROUP</p>
+              <h2>创建群聊</h2>
+            </div>
+          </div>
+          <form id="newGroup" class="wechat-form group-create-form">
+            <input id="groupName" placeholder="群名称，例如 Web 方向交流群" autocomplete="off" />
+            <textarea id="groupIntro" placeholder="群简介，可留空"></textarea>
+            <div class="friend-select-title">选择要拉入群的好友</div>
+            <div id="createFriendChecks" class="friend-check-list friend-selector"></div>
+            <button class="community-btn primary glow-btn" type="submit">创建并拉群</button>
+          </form>
+        </section>
+        <section class="wechat-card glass-card">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">MY GROUPS</p>
+              <h2>我的群聊</h2>
+            </div>
+            <button id="refreshGroups" class="community-btn ghost-btn" type="button">刷新</button>
+          </div>
+          <div id="groupList" class="friend-list group-list"></div>
+        </section>
       </aside>
-      <section class="community-card">
-        <h2 id="groupTitle">选择一个群</h2>
-        <button id="joinGroup" class="community-btn">加入群</button>
-        <div id="groupMessages" class="message-box"></div>
-        <form id="groupMessageForm" class="community-form">
+
+      <section class="wechat-chat-panel social-chat-panel glass-card">
+        <div class="chat-titlebar social-chat-titlebar">
+          <div class="peer-head">
+            <div id="groupAvatar" class="chat-peer-avatar group-peer-avatar">群</div>
+            <div>
+              <p class="mini-label">GROUP CHAT</p>
+              <h2 id="groupTitle">选择一个群</h2>
+              <p id="groupSubtitle" class="wechat-muted">群成员可以在这里交流。</p>
+            </div>
+          </div>
+        </div>
+        <div class="wechat-card invite-card invite-glass">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">INVITE</p>
+              <h3>邀请好友进群</h3>
+            </div>
+            <button id="inviteFriends" class="community-btn ghost-btn" type="button">邀请选中</button>
+          </div>
+          <div id="inviteFriendChecks" class="friend-check-list compact friend-selector"></div>
+        </div>
+        <div id="groupMessages" class="message-box wechat-message-box chat-canvas"></div>
+        <form id="groupMessageForm" class="wechat-message-form chat-composer">
           <textarea id="groupMessageText" placeholder="输入群消息，Enter 发送，Shift+Enter 换行"></textarea>
-          <button class="community-btn primary" type="submit">发送</button>
+          <button class="community-btn primary send-btn" type="submit">发送</button>
         </form>
-        <p id="groupStatus" class="community-muted"></p>
+        <p id="groupStatus" class="wechat-muted status-line"></p>
       </section>
     </section>
   </main>

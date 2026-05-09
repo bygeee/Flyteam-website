@@ -42,6 +42,14 @@ func initDatabaseSchema(db *sql.DB) error {
 			value_json TEXT NOT NULL,
 			updated_at TEXT NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS app_cache (
+			scope TEXT NOT NULL,
+			key TEXT NOT NULL,
+			value_json TEXT NOT NULL,
+			expires_at TEXT,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY(scope, key)
+		)`,
 		`CREATE TABLE IF NOT EXISTS admin_users (
 			id TEXT PRIMARY KEY,
 			username TEXT NOT NULL UNIQUE,
@@ -152,6 +160,25 @@ func initDatabaseSchema(db *sql.DB) error {
 			FOREIGN KEY(follower_id) REFERENCES community_users(id) ON DELETE CASCADE,
 			FOREIGN KEY(following_id) REFERENCES community_users(id) ON DELETE CASCADE
 		)`,
+		`CREATE TABLE IF NOT EXISTS friend_requests (
+			id TEXT PRIMARY KEY,
+			requester_id TEXT NOT NULL,
+			addressee_id TEXT NOT NULL,
+			message TEXT,
+			status TEXT NOT NULL DEFAULT 'pending',
+			created_at TEXT NOT NULL,
+			updated_at TEXT,
+			FOREIGN KEY(requester_id) REFERENCES community_users(id) ON DELETE CASCADE,
+			FOREIGN KEY(addressee_id) REFERENCES community_users(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS friendships (
+			user_a TEXT NOT NULL,
+			user_b TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			PRIMARY KEY(user_a, user_b),
+			FOREIGN KEY(user_a) REFERENCES community_users(id) ON DELETE CASCADE,
+			FOREIGN KEY(user_b) REFERENCES community_users(id) ON DELETE CASCADE
+		)`,
 		`CREATE TABLE IF NOT EXISTS private_conversations (
 			id TEXT PRIMARY KEY,
 			user_a TEXT NOT NULL,
@@ -217,9 +244,13 @@ func initDatabaseSchema(db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_blog_articles_public ON blog_articles(status, visibility, published_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_blog_articles_author ON blog_articles(author_id, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_blog_comments_article ON blog_comments(article_id, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_friend_requests_inbox ON friend_requests(addressee_id, status, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_friend_requests_outbox ON friend_requests(requester_id, status, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_friendships_user_b ON friendships(user_b, user_a)`,
 		`CREATE INDEX IF NOT EXISTS idx_private_messages_conversation ON private_messages(conversation_id, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_group_messages_group ON chat_group_messages(group_id, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_app_cache_expiry ON app_cache(scope, expires_at)`,
 	}
 	for _, stmt := range schema {
 		if _, err := db.Exec(stmt); err != nil {

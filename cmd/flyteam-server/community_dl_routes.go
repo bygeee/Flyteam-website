@@ -33,10 +33,11 @@ type messageCreateRequest struct {
 }
 
 type groupCreateRequest struct {
-	Name       string `json:"name"`
-	Intro      string `json:"intro"`
-	AvatarURL  string `json:"avatar_url"`
-	Visibility string `json:"visibility"`
+	Name          string   `json:"name"`
+	Intro         string   `json:"intro"`
+	AvatarURL     string   `json:"avatar_url"`
+	Visibility    string   `json:"visibility"`
+	MemberUserIDs []string `json:"member_user_ids"`
 }
 
 type groupMemberRequest struct {
@@ -45,6 +46,22 @@ type groupMemberRequest struct {
 
 func (s *Server) routeDLCommunityAPI(w http.ResponseWriter, r *http.Request, path string) bool {
 	switch {
+	case path == "/api/friends" && r.Method == http.MethodGet:
+		s.handleListFriends(w, r)
+	case strings.HasPrefix(path, "/api/friends/") && r.Method == http.MethodDelete:
+		s.handleRemoveFriend(w, r, pathValue(path, "/api/friends/"))
+	case path == "/api/friends/requests":
+		if r.Method == http.MethodGet {
+			s.handleFriendRequests(w, r)
+		} else if r.Method == http.MethodPost {
+			s.handleCreateFriendRequest(w, r)
+		} else {
+			writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
+		}
+	case strings.HasPrefix(path, "/api/friends/requests/") && strings.HasSuffix(path, "/accept") && r.Method == http.MethodPost:
+		s.handleFriendRequestAction(w, r, strings.TrimSuffix(pathValue(path, "/api/friends/requests/"), "/accept"), "accept")
+	case strings.HasPrefix(path, "/api/friends/requests/") && strings.HasSuffix(path, "/reject") && r.Method == http.MethodPost:
+		s.handleFriendRequestAction(w, r, strings.TrimSuffix(pathValue(path, "/api/friends/requests/"), "/reject"), "reject")
 	case path == "/api/blog/recommendations" && r.Method == http.MethodGet:
 		s.handleBlogRecommendations(w, r)
 	case path == "/api/search" && r.Method == http.MethodGet:

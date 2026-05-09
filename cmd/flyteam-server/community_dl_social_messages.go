@@ -155,6 +155,10 @@ func (s *Server) handleCreateMessageConversation(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "Cannot create a conversation with yourself.")
 		return
 	}
+	if !s.areFriends(user.ID, targetID) && !s.canModerateCommunity(r, user) {
+		writeError(w, http.StatusForbidden, "Only friends can start a private conversation.")
+		return
+	}
 	userA, userB := orderedPair(user.ID, targetID)
 	id := randomHex(8)
 	now := nowISO()
@@ -210,7 +214,7 @@ func (s *Server) handleConversationMessages(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	limit := parseLimit(r, 50, 100)
-	rows, err := s.db.Query(`SELECT m.id, m.sender_id, m.content, m.created_at, COALESCE(m.read_at,''), u.user_id, u.nickname
+	rows, err := s.db.Query(`SELECT m.id, m.sender_id, m.content, m.created_at, COALESCE(m.read_at,''), u.user_id, u.nickname, COALESCE(u.avatar_url,'')
 		FROM private_messages m JOIN community_users u ON u.id=m.sender_id
 		WHERE m.conversation_id=? AND m.status='normal'
 		ORDER BY m.created_at DESC LIMIT ?`, conversationID, limit)
@@ -221,12 +225,12 @@ func (s *Server) handleConversationMessages(w http.ResponseWriter, r *http.Reque
 	defer rows.Close()
 	items := []map[string]any{}
 	for rows.Next() {
-		var id, senderPK, content, createdAt, readAt, senderID, nickname string
-		if err := rows.Scan(&id, &senderPK, &content, &createdAt, &readAt, &senderID, &nickname); err != nil {
+		var id, senderPK, content, createdAt, readAt, senderID, nickname, avatar string
+		if err := rows.Scan(&id, &senderPK, &content, &createdAt, &readAt, &senderID, &nickname, &avatar); err != nil {
 			writeError(w, http.StatusInternalServerError, "Failed to read messages.")
 			return
 		}
-		items = append(items, map[string]any{"id": id, "content": content, "created_at": createdAt, "read_at": readAt, "sender": map[string]any{"id": senderID, "user_pk": senderPK, "nickname": nickname}, "mine": senderPK == user.ID})
+		items = append(items, map[string]any{"id": id, "content": content, "created_at": createdAt, "read_at": readAt, "sender": map[string]any{"id": senderID, "user_pk": senderPK, "nickname": nickname, "avatar_url": avatar}, "mine": senderPK == user.ID})
 	}
 	if err := rows.Close(); err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to read messages.")

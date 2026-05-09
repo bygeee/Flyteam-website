@@ -137,6 +137,9 @@ func TestDLFollowMessagesAndGroups(t *testing.T) {
 	if follows != 1 {
 		t.Fatalf("duplicate follows=%d", follows)
 	}
+	if _, err := s.db.Exec(`INSERT INTO friendships(user_a,user_b,created_at) VALUES('u-a','u-b',?)`, nowISO()); err != nil {
+		t.Fatal(err)
+	}
 
 	conv := dlReq(s, http.MethodPost, "/api/messages/conversations", aTok, map[string]any{"target_user_id": "bob"})
 	if conv.Code != http.StatusOK {
