@@ -289,13 +289,16 @@ func (s *Server) handleDeleteReviewByURL(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) loadRecruitContent() []any {
-	b, err := os.ReadFile(s.cfg.RecruitContentFile)
-	if err != nil {
-		return []any{}
-	}
 	var raw []any
-	if json.Unmarshal(b, &raw) != nil {
-		return []any{}
+	fromDB := s.loadJSONFromDB("recruit_applications", &raw)
+	if !fromDB {
+		b, err := os.ReadFile(s.cfg.RecruitContentFile)
+		if err != nil {
+			return []any{}
+		}
+		if json.Unmarshal(b, &raw) != nil {
+			return []any{}
+		}
 	}
 	out := []any{}
 	for _, it := range raw {
@@ -308,9 +311,16 @@ func (s *Server) loadRecruitContent() []any {
 	sort.SliceStable(out, func(i, j int) bool {
 		return recordLess(asMap(out[i]), asMap(out[j]), []string{"created_at", "date", "year", "grade"})
 	})
+	if !fromDB && s.db != nil {
+		_ = s.saveJSONToDB("recruit_applications", out)
+	}
 	return out
 }
 func (s *Server) saveRecruitContent(items []any) {
+	if s.db != nil {
+		_ = s.saveJSONToDB("recruit_applications", items)
+		return
+	}
 	_ = writeJSONAtomic(s.cfg.RecruitContentFile, items)
 }
 func (s *Server) handleRecruitHalls(w http.ResponseWriter, r *http.Request) {

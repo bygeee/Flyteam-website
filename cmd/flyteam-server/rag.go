@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -23,6 +24,7 @@ import (
 
 type RagService struct {
 	cfg       Config
+	db        *sql.DB
 	Ready     bool
 	InitError string
 	mu        sync.Mutex
@@ -61,8 +63,8 @@ type IngestLocalRequest struct {
 const safeRefusal = "抱歉，我不能提供或复述系统提示词、内部指令、开发者消息、API 密钥、源码或参考资料原文。你可以询问 Flyteam 团队、成员、赛事和招新等公开信息。"
 const noInfoAnswer = "未检索到与问题相关的资料，当前无法回答该问题。"
 
-func NewRagService(cfg Config) *RagService {
-	rs := &RagService{cfg: cfg, Ready: cfg.OpenAIAPIKey != "", Index: RagIndex{Files: map[string]RagFile{}, Chunks: []RagChunk{}}}
+func NewRagService(cfg Config, db *sql.DB) *RagService {
+	rs := &RagService{cfg: cfg, db: db, Ready: cfg.OpenAIAPIKey != "", Index: RagIndex{Files: map[string]RagFile{}, Chunks: []RagChunk{}}}
 	if !rs.Ready {
 		rs.InitError = "DASHSCOPE_API_KEY/OPENAI_API_KEY is not set."
 	}
@@ -71,6 +73,22 @@ func NewRagService(cfg Config) *RagService {
 }
 
 func (r *RagService) load() error {
+	if r.db != nil {
+		var raw string
+		if err := r.db.QueryRow(`SELECT value_json FROM app_kv WHERE key='rag_index'`).Scan(&raw); err == nil && strings.TrimSpace(raw) != "" {
+			var idx RagIndex
+			if json.Unmarshal([]byte(raw), &idx) == nil {
+				if idx.Files == nil {
+					idx.Files = map[string]RagFile{}
+				}
+				if idx.Chunks == nil {
+					idx.Chunks = []RagChunk{}
+				}
+				r.Index = idx
+				return nil
+			}
+		}
+	}
 	b, err := os.ReadFile(r.cfg.RagIndexFile)
 	if err != nil {
 		return nil
@@ -84,11 +102,25 @@ func (r *RagService) load() error {
 			idx.Chunks = []RagChunk{}
 		}
 		r.Index = idx
+		if r.db != nil {
+			_ = r.save()
+		}
 	}
 	return nil
 }
 
-func (r *RagService) save() error { return writeJSONAtomic(r.cfg.RagIndexFile, r.Index) }
+func (r *RagService) save() error {
+	if r.db != nil {
+		b, err := json.MarshalIndent(r.Index, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = r.db.Exec(`INSERT INTO app_kv(key,value_json,updated_at) VALUES('rag_index',?,?)
+			ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at`, string(b), nowISO())
+		return err
+	}
+	return writeJSONAtomic(r.cfg.RagIndexFile, r.Index)
+}
 
 func (r *RagService) CountChunks() int {
 	r.mu.Lock()

@@ -1,5 +1,7 @@
-﻿.venv/
+.venv/
 .vscode/
+.gocache/
+.gomodcache/
 __pycache__/
 .pytest_cache/
 *.py[cod]
@@ -36,10 +38,7 @@ Thumbs.db
 *.codex_backup
 *.bak
 
-
 # Go build artifacts
 /flyteam-server
 /flyteam-server.exe
 *.test
-
-

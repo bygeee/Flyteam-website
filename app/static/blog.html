@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 博客广场</title>
+  <link rel="stylesheet" href="/static/public.css" />
+  <link rel="stylesheet" href="/static/community.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">Flyteam</a>
+      <nav class="nav">
+        <a href="/">首页</a>
+        <a href="/blog">博客</a>
+        <a href="/user-login">登录</a>
+        <a href="/user-register">注册</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="community-page">
+    <section class="community-hero">
+      <p class="sub">FLYTEAM COMMUNITY</p>
+      <h1>博客广场</h1>
+      <p>阅读团队成员发布的公开文章。草稿只对作者本人可见。</p>
+    </section>
+
+    <section class="community-panel">
+      <div class="community-panel-head">
+        <div>
+          <h2>最新文章</h2>
+          <p id="blogStatus">正在加载文章...</p>
+        </div>
+        <a class="community-button" href="/user-login">登录后写文章</a>
+      </div>
+      <div id="blogList" class="article-grid"></div>
+    </section>
+  </main>
+
+  <script src="/static/blog.js"></script>
+</body>
+</html>

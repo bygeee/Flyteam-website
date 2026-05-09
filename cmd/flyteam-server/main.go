@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -29,11 +30,15 @@ type Config struct {
 	SeniorUploadDir       string
 	ReviewUploadDir       string
 	NewsUploadDir         string
+	BlogUploadDir         string
+	DatabaseFile          string
 	RagIndexFile          string
 	TeamContentFile       string
 	RecruitContentFile    string
 	IngestIndexFile       string
 	AdminUsersFile        string
+	CommunityUsersFile    string
+	BlogArticlesFile      string
 	DefaultDataFiles      []string
 	OpenAIAPIKey          string
 	OpenAIBaseURL         string
@@ -44,6 +49,7 @@ type Config struct {
 	AdminToken            string
 	AdminPassword         string
 	AdminSessionHours     int
+	UserSessionHours      int
 	AdminCookieSecure     bool
 	MaxUploadFiles        int
 	MaxImageUploadBytes   int64
@@ -52,14 +58,17 @@ type Config struct {
 }
 
 type Server struct {
-	cfg       Config
-	rag       *RagService
-	sessions  map[string]AdminSession
-	sessMu    sync.Mutex
-	rate      map[string][]time.Time
-	rateMu    sync.Mutex
-	captchas  map[string]CaptchaEntry
-	captchaMu sync.Mutex
+	cfg          Config
+	rag          *RagService
+	db           *sql.DB
+	sessions     map[string]AdminSession
+	sessMu       sync.Mutex
+	userSessions map[string]CommunitySession
+	userSessMu   sync.Mutex
+	rate         map[string][]time.Time
+	rateMu       sync.Mutex
+	captchas     map[string]CaptchaEntry
+	captchaMu    sync.Mutex
 }
 
 func main() {
@@ -67,18 +76,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, filepath.Dir(cfg.RagIndexFile)} {
+	for _, dir := range []string{cfg.StorageDir, cfg.UploadDir, cfg.ImageUploadDir, cfg.AwardUploadDir, cfg.SeniorUploadDir, cfg.ReviewUploadDir, cfg.NewsUploadDir, cfg.BlogUploadDir, filepath.Dir(cfg.RagIndexFile), filepath.Dir(cfg.DatabaseFile)} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			log.Fatalf("mkdir %s: %v", dir, err)
 		}
 	}
-	rag := NewRagService(cfg)
+	db, err := openDatabase(cfg)
+	if err != nil {
+		log.Fatalf("database init failed: %v", err)
+	}
+	defer db.Close()
+	rag := NewRagService(cfg, db)
 	s := &Server{
-		cfg:      cfg,
-		rag:      rag,
-		sessions: map[string]AdminSession{},
-		rate:     map[string][]time.Time{},
-		captchas: map[string]CaptchaEntry{},
+		cfg:          cfg,
+		rag:          rag,
+		db:           db,
+		sessions:     map[string]AdminSession{},
+		userSessions: map[string]CommunitySession{},
+		rate:         map[string][]time.Time{},
+		captchas:     map[string]CaptchaEntry{},
 	}
 	log.Printf("Flyteam Go server listening on %s", cfg.ListenAddr)
 	if err := http.ListenAndServe(cfg.ListenAddr, s); err != nil {
@@ -136,11 +152,15 @@ func LoadConfig() (Config, error) {
 		SeniorUploadDir:       filepath.Join(upload, "seniors"),
 		ReviewUploadDir:       filepath.Join(upload, "review"),
 		NewsUploadDir:         filepath.Join(upload, "news"),
+		BlogUploadDir:         filepath.Join(upload, "blog"),
+		DatabaseFile:          getenv("DATABASE_FILE", filepath.Join(storage, "flyteam.db")),
 		RagIndexFile:          filepath.Join(storage, "rag_index_go.json"),
 		TeamContentFile:       filepath.Join(storage, "team_content.json"),
 		RecruitContentFile:    filepath.Join(storage, "recruit_applications.json"),
 		IngestIndexFile:       filepath.Join(storage, "ingest_index.json"),
 		AdminUsersFile:        filepath.Join(storage, "admin_users.json"),
+		CommunityUsersFile:    filepath.Join(storage, "community_users.json"),
+		BlogArticlesFile:      filepath.Join(storage, "blog_articles.json"),
 		DefaultDataFiles:      []string{filepath.Join(upload, "flyteam_knowledge.pdf")},
 		OpenAIAPIKey:          apiKey,
 		OpenAIBaseURL:         getenv("OPENAI_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
@@ -151,6 +171,7 @@ func LoadConfig() (Config, error) {
 		AdminToken:            os.Getenv("ADMIN_TOKEN"),
 		AdminPassword:         os.Getenv("ADMIN_PASSWORD"),
 		AdminSessionHours:     atoi("ADMIN_SESSION_HOURS", 8),
+		UserSessionHours:      atoi("USER_SESSION_HOURS", 168),
 		AdminCookieSecure:     truthy("ADMIN_COOKIE_SECURE"),
 		MaxUploadFiles:        atoi("MAX_UPLOAD_FILES", 20),
 		MaxImageUploadBytes:   int64(max(1, maxImgMB)) * 1024 * 1024,
@@ -240,6 +261,14 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 		s.handleLoginPage(w, r)
 		return
 	}
+	if path == "/user-login" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "user_login.html")
+		return
+	}
+	if path == "/user-register" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "user_register.html")
+		return
+	}
 	if path == "/admin" && r.Method == http.MethodGet {
 		s.handleAdminPage(w, r)
 		return
@@ -250,6 +279,22 @@ func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 	}
 	if path == "/recruit" && r.Method == http.MethodGet {
 		s.serveStaticHTML(w, r, "recruit.html")
+		return
+	}
+	if path == "/editor" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "editor.html")
+		return
+	}
+	if strings.HasPrefix(path, "/space/") && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "space.html")
+		return
+	}
+	if path == "/blog" && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "blog.html")
+		return
+	}
+	if strings.HasPrefix(path, "/blog/") && r.Method == http.MethodGet {
+		s.serveStaticHTML(w, r, "article.html")
 		return
 	}
 	if path == "/news" && r.Method == http.MethodGet {

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 用户登录</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <h1>Flyteam 用户登录</h1>
+    <p>登录后可以进入后续的创作中心、个人空间和博客文章功能。</p>
+    <form id="userLoginForm">
+      <input id="userId" autocomplete="username" placeholder="用户 ID" required />
+      <input id="password" type="password" autocomplete="current-password" placeholder="密码" required />
+      <div class="login-row">
+        <a class="back-link" href="/">返回首页</a>
+        <button type="submit">登录</button>
+      </div>
+    </form>
+    <p class="login-switch">还没有账号？<a class="back-link" href="/user-register">立即注册</a></p>
+    <div id="userLoginMsg" class="login-msg"></div>
+  </main>
+  <script src="/static/user_login.js"></script>
+</body>
+</html>
