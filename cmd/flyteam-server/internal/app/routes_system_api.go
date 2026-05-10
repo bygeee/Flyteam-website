@@ -23,6 +23,8 @@ func (s *Server) routeSystemAPI(w http.ResponseWriter, r *http.Request, path str
 		s.handleUploadImages(w, r, s.cfg.ReviewUploadDir, "/uploads/review", false)
 	case path == "/api/upload/news/images" && r.Method == http.MethodPost:
 		s.handleUploadImages(w, r, s.cfg.NewsUploadDir, "/uploads/news", false)
+	case path == "/api/chat/stream" && r.Method == http.MethodPost:
+		s.handleChatStream(w, r)
 	case path == "/api/chat" && r.Method == http.MethodPost:
 		s.handleChat(w, r)
 	default:
