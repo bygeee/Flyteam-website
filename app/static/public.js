@@ -399,6 +399,8 @@ function renderNews() {
       img.loading = "lazy";
       bindPreview(img, item.title || "团队新闻");
       card.appendChild(img);
+    } else {
+      card.appendChild(createNode("div", "review-empty-cover news-empty-cover", "Flyteam"));
     }
 
     const box = createNode("div", "news-card-body");

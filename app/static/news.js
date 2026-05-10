@@ -367,6 +367,8 @@ function renderNewsList(items) {
       img.loading = "lazy";
       bindPreview(img, img.alt);
       card.appendChild(img);
+    } else {
+      card.appendChild(createNode("div", "review-empty-cover news-empty-cover", "Flyteam"));
     }
     const box = createNode("div", "news-card-body");
     appendPinBadge(box, item);
