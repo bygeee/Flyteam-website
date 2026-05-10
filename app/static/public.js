@@ -148,6 +148,36 @@ function comparePinnedRecords(a, b) {
   return recordSortValue(b) - recordSortValue(a) || recordSortText(b).localeCompare(recordSortText(a));
 }
 
+function seniorGradeCode(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  if (["帮主", "帮主级", "leader"].includes(lower) || text.includes("帮主")) return "leader";
+  const fullYear = text.match(/20(1[3-9]|2[0-9])/);
+  if (fullYear) return fullYear[0].slice(-2);
+  const shortYear = text.match(/(^|[^0-9])(1[3-9]|2[0-9])([^0-9]|$)/);
+  if (shortYear) return shortYear[2];
+  return "";
+}
+
+function seniorGradeRank(item) {
+  const code = seniorGradeCode(item && item.grade);
+  if (code === "leader") return 100000;
+  const num = Number(code || 0);
+  return Number.isFinite(num) && num > 0 ? num : -1;
+}
+
+function compareSeniorRecords(a, b) {
+  const pa = isPinned(a) ? 1 : 0;
+  const pb = isPinned(b) ? 1 : 0;
+  if (pa !== pb) return pb - pa;
+  const ga = seniorGradeRank(a);
+  const gb = seniorGradeRank(b);
+  if (ga !== gb) return gb - ga;
+  return recordSortValue(b) - recordSortValue(a)
+    || String(a && a.name || "").localeCompare(String(b && b.name || ""), "zh-Hans-CN");
+}
+
 function compareNewsRecords(a, b) {
   const pa = isPinned(a) ? 1 : 0;
   const pb = isPinned(b) ? 1 : 0;
@@ -629,7 +659,7 @@ function renderSeniors() {
     return;
   }
 
-  [...state.seniors].sort(comparePinnedRecords).forEach((item) => {
+  [...state.seniors].sort(compareSeniorRecords).forEach((item) => {
     const card = createNode("article", "card senior-card");
     const photoUrl = normalizeImageUrl(item.photo_url);
     if (photoUrl) {

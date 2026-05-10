@@ -57,9 +57,10 @@ function compareSeniors(a, b) {
   if (pa !== pb) return pb - pa;
   const ga = parseGradeCode(a.grade);
   const gb = parseGradeCode(b.grade);
-  if (ga === "leader" && gb !== "leader") return -1;
-  if (gb === "leader" && ga !== "leader") return 1;
-  return Number(gb || 0) - Number(ga || 0);
+  const rankA = gradeSortRank(ga);
+  const rankB = gradeSortRank(gb);
+  if (rankA !== rankB) return rankB - rankA;
+  return String(a.name || "").localeCompare(String(b.name || ""), "zh-Hans-CN");
 }
 
 function parseGradeCode(raw) {
@@ -73,11 +74,19 @@ function parseGradeCode(raw) {
   return "";
 }
 
+function gradeSortRank(code) {
+  if (code === "leader") return 100000;
+  const num = Number(code || 0);
+  return Number.isFinite(num) && num > 0 ? num : -1;
+}
+
 function listGradeCodes() {
-  const result = ["all", "leader", "responsible"];
-  const currentShortYear = Number(String(new Date().getFullYear()).slice(-2)) + 1;
-  for (let i = 13; i <= currentShortYear; i += 1) result.push(String(i));
-  return result;
+  const numericCodes = Array.from(new Set(
+    state.seniors
+      .map((item) => parseGradeCode(item.grade))
+      .filter((code) => code && code !== "leader"),
+  )).sort((a, b) => gradeSortRank(b) - gradeSortRank(a));
+  return ["all", "leader", "responsible", ...numericCodes];
 }
 
 function gradeLabel(code) {

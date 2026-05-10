@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,6 +13,11 @@ import (
 )
 
 type M map[string]any
+
+var (
+	seniorFullYearRe  = regexp.MustCompile(`20(1[3-9]|2[0-9])|19[0-9]{2}`)
+	seniorShortYearRe = regexp.MustCompile(`(^|[^0-9])(1[3-9]|2[0-9])([^0-9]|$)`)
+)
 
 type AwardRequest struct {
 	Title, AwardType, Year, Level, Organizer, Description, ImageURL string
@@ -263,7 +269,7 @@ func (s *Server) loadTeamContent() M {
 		seniors = append(seniors, M{"id": defaultString(asString(m["id"]), randomHex(5)), "name": name, "grade": asString(m["grade"]), "hall": validHall(asString(m["hall"])), "direction": asString(m["direction"]), "intro": asString(m["intro"]), "achievements": asString(m["achievements"]), "advice": asString(m["advice"]), "photo_url": photo, "pinned": asBool(m["pinned"]), "responsible": asBool(firstNonNil(m["responsible"], m["is_responsible"], m["is_manager"])), "created_at": defaultString(asString(m["created_at"]), asString(m["grade"])), "updated_at": asString(m["updated_at"])})
 	}
 	sort.SliceStable(seniors, func(i, j int) bool {
-		return recordLess(asMap(seniors[i]), asMap(seniors[j]), []string{"created_at", "date", "year", "grade"})
+		return seniorLess(asMap(seniors[i]), asMap(seniors[j]))
 	})
 	data["seniors"] = seniors
 
@@ -434,6 +440,38 @@ func recordLess(a, b M, fields []string) bool {
 		return va > vb
 	}
 	return recordText(a, fields) > recordText(b, fields)
+}
+func seniorGradeRank(m M) int {
+	text := strings.TrimSpace(asString(m["grade"]))
+	if text == "" {
+		return -1
+	}
+	low := strings.ToLower(text)
+	if strings.Contains(text, "帮主") || strings.Contains(low, "leader") {
+		return 100000
+	}
+	if y := seniorFullYearRe.FindString(text); y != "" {
+		if n, err := strconv.Atoi(y); err == nil {
+			return n
+		}
+	}
+	if m := seniorShortYearRe.FindStringSubmatch(text); len(m) >= 3 {
+		if n, err := strconv.Atoi(m[2]); err == nil {
+			return 2000 + n
+		}
+	}
+	return -1
+}
+func seniorLess(a, b M) bool {
+	pa, pb := asBool(a["pinned"]), asBool(b["pinned"])
+	if pa != pb {
+		return pa
+	}
+	ga, gb := seniorGradeRank(a), seniorGradeRank(b)
+	if ga != gb {
+		return ga > gb
+	}
+	return recordLess(a, b, []string{"created_at", "date", "year", "grade"})
 }
 func awardLess(a, b M) bool {
 	pa, pb := asBool(a["pinned"]), asBool(b["pinned"])
