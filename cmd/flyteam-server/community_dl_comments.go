@@ -28,6 +28,10 @@ func (s *Server) articleStats(articleID string) map[string]any {
 }
 
 func (s *Server) handleArticleComments(w http.ResponseWriter, r *http.Request, articleID string) {
+	if !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
 	article, err := s.loadArticleMeta(articleID)
 	if err != nil || !articleReadable(article) {
 		writeError(w, http.StatusNotFound, "Article not found.")

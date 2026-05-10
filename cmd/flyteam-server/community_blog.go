@@ -276,6 +276,10 @@ func (s *Server) insertOrUpdateBlogArticle(a BlogArticle, actorID string, create
 }
 
 func (s *Server) handleGetBlogArticle(w http.ResponseWriter, r *http.Request, id string) {
+	if !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
 	article, err := s.loadBlogArticleByID(id)
 	if err != nil || article.Status == "deleted" {
 		writeError(w, http.StatusNotFound, "Article not found.")
@@ -385,6 +389,10 @@ func (s *Server) handlePublishBlogArticle(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) handleViewBlogArticle(w http.ResponseWriter, r *http.Request, id string) {
+	if !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
 	article, err := s.loadBlogArticleByID(id)
 	if err != nil || article.Status != "published" || article.Visibility != "public" {
 		writeError(w, http.StatusNotFound, "Article not found.")

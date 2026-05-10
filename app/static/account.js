@@ -1,9 +1,27 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { user: null, stats: {} };
+  const state = { user: null, stats: {}, avatarVersion: Date.now() };
   const token = () => localStorage.getItem("flyteam_user_token") || localStorage.getItem("user_token") || "";
   const csrf = () => sessionStorage.getItem("flyteam_user_csrf") || "";
   const escapeHTML = (s) => String(s || "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+  function installStrayCaretGuard() {
+    const editableSelector = "input, textarea, select, [contenteditable='true'], [contenteditable='plaintext-only'], .article-body, pre, code";
+    const isEditableTarget = (target) => !!(target && target.closest && target.closest(editableSelector));
+    const clearCollapsedSelection = (target) => {
+      if (isEditableTarget(target)) return;
+      const sel = window.getSelection && window.getSelection();
+      if (sel && sel.rangeCount && sel.isCollapsed) sel.removeAllRanges();
+    };
+    document.addEventListener("pointerup", (event) => {
+      window.requestAnimationFrame(() => clearCollapsedSelection(event.target));
+    }, true);
+    document.addEventListener("selectionchange", () => {
+      const active = document.activeElement;
+      if (isEditableTarget(active)) return;
+      const sel = window.getSelection && window.getSelection();
+      if (sel && sel.rangeCount && sel.isCollapsed) sel.removeAllRanges();
+    });
+  }
   function setText(id, text) { const el = $(id); if (el) el.textContent = text || ""; }
   function firstLetter(u) { return String((u && (u.nickname || u.user_id || u.id)) || "F").slice(0, 1).toUpperCase(); }
   function userID(u) { return (u && (u.user_id || u.id)) || ""; }
@@ -12,15 +30,22 @@
     if (token()) headers["X-User-Token"] = token();
     if (csrf()) headers["X-CSRF-Token"] = csrf();
     if (options.body && !(options.body instanceof FormData) && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-    const res = await fetch(path, { credentials: "same-origin", ...options, headers });
+    const res = await fetch(path, { credentials: "same-origin", cache: "no-store", ...options, headers });
     const raw = await res.text();
     let data = null;
     try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
     if (!res.ok) throw new Error((data && data.detail) || raw || `HTTP ${res.status}`);
     return data || {};
   }
+  function avatarDisplayURL(url) {
+    const clean = String(url || "").trim();
+    if (!clean) return "";
+    const joiner = clean.includes("?") ? "&" : "?";
+    return `${clean}${joiner}v=${encodeURIComponent(String(state.avatarVersion || Date.now()))}`;
+  }
   function avatarHTML(u, big = false) {
-    if (u && u.avatar_url) return `<img src="${escapeHTML(u.avatar_url)}" alt="${escapeHTML(u.nickname || userID(u))}">`;
+    const src = avatarDisplayURL(u && u.avatar_url);
+    if (src) return `<img src="${escapeHTML(src)}" alt="${escapeHTML((u && (u.nickname || userID(u))) || "avatar")}">`;
     return `<span>${escapeHTML(firstLetter(u))}</span>`;
   }
   function renderUser(data) {
@@ -78,10 +103,13 @@
     const form = new FormData(); form.append("files", file);
     try {
       const data = await api("/api/upload/avatar", { method: "POST", body: form });
-      const u = data.user || state.user || {};
+      const nextAvatarURL = data.avatar_url || (data.user && data.user.avatar_url) || "";
+      const u = { ...(state.user || {}), ...(data.user || {}) };
+      if (nextAvatarURL) u.avatar_url = nextAvatarURL;
+      state.avatarVersion = Date.now();
+      if ($("avatarUrl")) $("avatarUrl").value = u.avatar_url || "";
       renderUser({ user: u, stats: state.stats });
-      $("avatarUrl").value = data.avatar_url || u.avatar_url || "";
-      setText("profileMsg", "头像已更新。记得点击保存资料同步其他修改。");
+      setText("profileMsg", "头像已立即保存并覆盖旧头像。若浏览器仍显示旧图，请强制刷新页面缓存。");
     } catch (err) { setText("profileMsg", `头像上传失败：${err.message}`); }
     finally { $("avatarFile").value = ""; }
   }
@@ -106,5 +134,6 @@
   $("passwordForm")?.addEventListener("submit", changePassword);
   $("avatarFile")?.addEventListener("change", uploadAvatar);
   $("refreshMyArticles")?.addEventListener("click", loadMyArticles);
+  installStrayCaretGuard();
   loadMe();
 })();

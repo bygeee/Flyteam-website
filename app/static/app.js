@@ -72,6 +72,7 @@ createApp({
       communityUsers: [],
       communityUserKeyword: "",
       communityUserTotal: 0,
+      communityPendingUserCount: 0,
       communityUserText: "\u65b0\u4eba\u6ce8\u518c\u9700\u8981\u535a\u5ba2\u7ad9\u7ba1\u7406\u5458\u6216\u8d85\u7ea7\u7ba1\u7406\u5458\u5ba1\u6838\uff1b\u901a\u8fc7\u540e\u624d\u80fd\u767b\u5f55\u3002",
       blogSiteState: {
         open: true,
@@ -275,6 +276,22 @@ createApp({
         return true;
       });
     },
+    pendingCommunityUserCount() {
+      return Number(this.communityPendingUserCount || 0) || this.communityUsers.filter((user) => this.isPendingCommunityUser(user)).length;
+    },
+    sortedCommunityUsers() {
+      const statusRank = { pending: 0, active: 1, muted: 2, banned: 3, rejected: 4, deleted: 5 };
+      const roleRank = { superadmin: 0, admin: 1, moderator: 2, user: 3 };
+      return [...this.communityUsers].sort((a, b) => {
+        const sa = statusRank[String((a && a.status) || "active").toLowerCase()] ?? 9;
+        const sb = statusRank[String((b && b.status) || "active").toLowerCase()] ?? 9;
+        if (sa !== sb) return sa - sb;
+        const ra = roleRank[String((a && a.role) || "user").toLowerCase()] ?? 9;
+        const rb = roleRank[String((b && b.role) || "user").toLowerCase()] ?? 9;
+        if (ra !== rb) return ra - rb;
+        return String((b && b.created_at) || "").localeCompare(String((a && a.created_at) || ""));
+      });
+    },
     communityRoleSelectOptions() {
       return this.isSuperAdmin ? this.communityPrivilegedRoleOptions : this.communityRoleOptions;
     },
@@ -315,6 +332,7 @@ createApp({
       this.adminUsers = [];
       this.communityUsers = [];
       this.communityUserTotal = 0;
+      this.communityPendingUserCount = 0;
       this.auditConversations = [];
       this.auditGroups = [];
       this.auditMessages = [];
@@ -2009,6 +2027,7 @@ createApp({
       if (!this.isBlogAdmin) {
         this.communityUsers = [];
         this.communityUserTotal = 0;
+        this.communityPendingUserCount = 0;
         return;
       }
       const q = encodeURIComponent(String(this.communityUserKeyword || "").trim());
@@ -2017,7 +2036,9 @@ createApp({
         const data = await this.fetchJSON(`/api/admin/community/users?page_size=80&include_deleted=${includeDeleted}&q=${q}`);
         this.communityUsers = Array.isArray(data.items) ? data.items : [];
         this.communityUserTotal = Number(data.total || this.communityUsers.length || 0);
-        this.communityUserText = `\u5df2\u8f7d\u5165 ${this.communityUsers.length} / ${this.communityUserTotal} \u4e2a\u7528\u6237\u3002\u5f85\u5ba1\u6838\u7528\u6237\u9700\u70b9\u51fb\u201c\u6279\u51c6\u6ce8\u518c\u201d\u540e\u624d\u80fd\u767b\u5f55\uff1b\u9a73\u56de\u540e\u8be5 ID \u53ef\u91cd\u65b0\u6ce8\u518c\u3002`;
+        this.communityPendingUserCount = Number(data.pending_count || this.communityUsers.filter((user) => this.isPendingCommunityUser(user)).length || 0);
+        const pendingTip = this.pendingCommunityUserCount ? `当前有 ${this.pendingCommunityUserCount} 个待审核用户，已优先置顶显示。` : "暂无待审核用户。";
+        this.communityUserText = `已载入 ${this.communityUsers.length} / ${this.communityUserTotal} 个用户。${pendingTip} 待审核用户需点击“批准注册”后才能登录；驳回后该 ID 可重新注册。`;
       } catch (err) {
         this.communityUserText = `用户列表获取失败：${err.message}`;
       }

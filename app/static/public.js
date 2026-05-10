@@ -588,8 +588,8 @@ function renderAwards() {
   filtered.forEach((item) => {
     const card = createNode("article", "card award-card");
     const imageUrl = normalizeImageUrl(item.image_url);
+    const media = createNode("div", "card-media award-media");
     if (imageUrl) {
-      const media = createNode("div", "card-media award-media");
       const img = document.createElement("img");
       img.src = imageUrl;
       img.alt = item.title || "奖项图片";
@@ -597,8 +597,11 @@ function renderAwards() {
       img.className = "card-image award-image";
       bindPreview(img, item.title || "奖项荣誉");
       media.appendChild(img);
-      card.appendChild(media);
+    } else {
+      const empty = createNode("div", "review-empty-cover award-empty-cover", "Flyteam");
+      media.appendChild(empty);
     }
+    card.appendChild(media);
     const body = createNode("div", "card-body");
     appendPinBadge(body, item);
     const badgeRow = createNode("div", "award-badge-row");

@@ -1,7 +1,34 @@
-﻿(() => {
+(() => {
   const $ = (id) => document.getElementById(id);
   const escapeHTML = (s) => String(s || "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
-  const state = { articles: [], recommendations: [], sort: "latest", filter: "all" };
+  const state = { articles: [], recommendations: [], sort: "latest", filter: "all", authed: false };
+
+  const userToken = () => localStorage.getItem("flyteam_user_token") || localStorage.getItem("user_token") || "";
+
+  async function initCommunityAuthUI() {
+    const headers = {};
+    if (userToken()) headers["X-User-Token"] = userToken();
+    let authed = false;
+    try {
+      const res = await fetch("/api/users/me", { credentials: "same-origin", cache: "no-store", headers });
+      if (res.ok) {
+        authed = true;
+        const data = await res.json().catch(() => ({}));
+        if (data && data.user) localStorage.setItem("flyteam_user", JSON.stringify(data.user));
+      }
+    } catch {
+      authed = false;
+    }
+    state.authed = authed;
+    document.body.classList.toggle("community-logged-in", authed);
+    document.body.classList.toggle("community-guest", !authed);
+  }
+
+  function writeLinkHTML(label = "去写文章", className = "campus-primary") {
+    return state.authed
+      ? `<a class="${className}" href="/editor">${escapeHTML(label)}</a>`
+      : `<a class="${className}" href="/user-login?next=/editor">登录后写文章</a>`;
+  }
 
   async function fetchJSON(url, options = {}) {
     const res = await fetch(url, { credentials: "same-origin", cache: "no-store", ...options });
@@ -39,7 +66,9 @@
     };
   }
 
-  function articleHref(a) { return `/blog/${encodeURIComponent(a.id)}`; }
+  function privateHref(path) { return state.authed ? path : `/user-login?next=${encodeURIComponent(path)}`; }
+  function articleHref(a) { return privateHref(`/blog/${encodeURIComponent(a.id)}`); }
+  function spaceHref(userID) { return privateHref(`/space/${encodeURIComponent(userID || "")}`); }
   function initials(text) { return String(text || "F").trim().slice(0, 1).toUpperCase() || "F"; }
   function heat(a) { return a.views + a.likes * 5 + a.favorites * 8 + a.comments * 3; }
   function minutes(a) { return Math.max(2, Math.ceil(String(a.summary || "").length / 80) + 3); }
@@ -115,7 +144,7 @@
     if (heroSummary && featured) heroSummary.textContent = featured.summary;
     if (!items.length) {
       if (status) status.textContent = "当前筛选下没有文章。";
-      list.innerHTML = `<div class="campus-empty"><h3>还没有文章</h3><p>换一个筛选条件，或者发布第一篇 Flyteam 技术博客。</p><a class="campus-primary" href="/editor">去写文章</a></div>`;
+      list.innerHTML = `<div class="campus-empty"><h3>还没有文章</h3><p>换一个筛选条件，或者发布第一篇 Flyteam 技术博客。</p>${writeLinkHTML()}</div>`;
       return;
     }
     if (status) status.textContent = `共 ${items.length} 篇文章 · ${state.sort === "hot" ? "按综合热度" : state.sort === "views" ? "按阅读量" : "按发布时间"}展示`;
@@ -167,8 +196,10 @@
       const data = await fetchJSON(`/api/search?q=${encodeURIComponent(q)}`);
       const articles = Array.isArray(data.articles) ? data.articles : [];
       const users = Array.isArray(data.users) ? data.users : [];
-      root.innerHTML = `<div class="campus-search-section"><h4>文章</h4>${articles.map(renderSearchArticle).join("") || '<p class="campus-muted">暂无文章。</p>'}</div>
-        <div class="campus-search-section"><h4>用户</h4>${users.map((u) => `<a class="campus-search-hit" href="/space/${encodeURIComponent(u.user_id || u.id || "")}"><strong>${escapeHTML(u.nickname || u.id)}</strong><span>@${escapeHTML(u.user_id || u.id)}</span></a>`).join("") || '<p class="campus-muted">暂无用户。</p>'}</div>`;
+      const userSection = state.authed
+        ? `<div class="campus-search-section"><h4>用户</h4>${users.map((u) => `<a class="campus-search-hit" href="${spaceHref(u.user_id || u.id || "")}"><strong>${escapeHTML(u.nickname || u.id)}</strong><span>@${escapeHTML(u.user_id || u.id)}</span></a>`).join("") || '<p class="campus-muted">暂无用户。</p>'}</div>`
+        : '<div class="campus-search-section"><h4>用户</h4><p class="campus-muted">登录后可查看用户主页、关注和私信。</p></div>';
+      root.innerHTML = `<div class="campus-search-section"><h4>文章</h4>${articles.map(renderSearchArticle).join("") || '<p class="campus-muted">暂无文章。</p>'}</div>${userSection}`;
     } catch (err) { root.innerHTML = `<p class="campus-muted">搜索失败：${escapeHTML(err.message)}</p>`; }
   }
 
@@ -176,6 +207,8 @@
   document.querySelectorAll("[data-filter]").forEach((btn) => btn.addEventListener("click", () => { state.filter = btn.dataset.filter || "all"; document.querySelectorAll("[data-filter]").forEach((x) => x.classList.toggle("on", x === btn)); renderFeed(); }));
   $("communitySearchInput")?.addEventListener("keydown", (event) => { if (event.key === "Enter") runSearch(); });
   $("communitySearchBtn")?.addEventListener("click", runSearch);
-  initBlogList();
-  loadRecommendations();
+  initCommunityAuthUI().finally(() => {
+    initBlogList();
+    loadRecommendations();
+  });
 })();

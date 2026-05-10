@@ -3,6 +3,7 @@ package main
 import (
 	"html"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -85,6 +86,44 @@ func isBlogFrontendPath(path string) bool {
 	}
 }
 
+func isPrivateCommunityFrontendPath(path string) bool {
+	if strings.HasPrefix(path, "/blog/") || strings.HasPrefix(path, "/space/") {
+		return true
+	}
+	switch path {
+	case "/editor", "/account", "/messages", "/groups",
+		"/static/article.html", "/static/editor.html", "/static/account.html", "/static/messages.html", "/static/groups.html", "/static/space.html":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Server) communityFrontendAllowsRequest(r *http.Request) bool {
+	user, _, ok := s.communityUserFromRequest(r)
+	if !ok {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(user.Status)) {
+	case "pending", "rejected", "banned", "deleted":
+		return false
+	default:
+		return true
+	}
+}
+
+func (s *Server) handleCommunityLoginRequired(w http.ResponseWriter, r *http.Request) {
+	if wantsJSON(r) {
+		writeError(w, http.StatusUnauthorized, "User login required.")
+		return
+	}
+	next := r.URL.RequestURI()
+	if strings.HasPrefix(r.URL.Path, "/static/") {
+		next = "/blog"
+	}
+	http.Redirect(w, r, "/user-login?next="+url.QueryEscape(next), http.StatusFound)
+}
+
 func isCommunityAPIPath(path string) bool {
 	if path == "/api/search" || path == "/api/upload/blog/images" || path == "/api/upload/avatar" {
 		return true
@@ -95,6 +134,21 @@ func isCommunityAPIPath(path string) bool {
 		}
 	}
 	return false
+}
+
+func isPublicCommunityGuestAPI(path, method string) bool {
+	switch {
+	case method == http.MethodGet && (path == "/api/blog/articles" || path == "/api/blog/recommendations" || path == "/api/search" || path == "/api/community/status"):
+		return true
+	case method == http.MethodPost && (path == "/api/users/register" || path == "/api/users/login"):
+		return true
+	default:
+		return false
+	}
+}
+
+func isPrivateCommunityAPIRequest(path, method string) bool {
+	return isCommunityAPIPath(path) && !isPublicCommunityGuestAPI(path, method)
 }
 
 func (s *Server) handleBlogClosedPage(w http.ResponseWriter, r *http.Request) {

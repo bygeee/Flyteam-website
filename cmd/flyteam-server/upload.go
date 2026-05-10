@@ -268,13 +268,18 @@ func (s *Server) handleUploadAvatar(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "No valid avatar image uploaded.")
 		return
 	}
-	_, err = s.db.Exec(`UPDATE community_users SET avatar_url=?, updated_at=? WHERE id=?`, urls[0], nowISO(), user.ID)
+	oldAvatarURL := strings.TrimSpace(user.AvatarURL)
+	newAvatarURL := urls[0]
+	_, err = s.db.Exec(`UPDATE community_users SET avatar_url=?, updated_at=? WHERE id=?`, newAvatarURL, nowISO(), user.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to update avatar.")
 		return
 	}
+	if oldAvatarURL != "" && oldAvatarURL != newAvatarURL {
+		deleteUploadedImage(oldAvatarURL, s.cfg.AvatarUploadDir, "/uploads/avatars")
+	}
 	u, _ := s.loadCommunityUserByPK(user.ID)
-	writeJSON(w, 200, map[string]any{"saved_images": urls, "avatar_url": urls[0], "user": publicCommunityUser(u)})
+	writeJSON(w, 200, map[string]any{"saved_images": urls, "avatar_url": newAvatarURL, "user": publicCommunityUser(u), "updated_at": nowISO()})
 }
 
 func min(a, b int) int {

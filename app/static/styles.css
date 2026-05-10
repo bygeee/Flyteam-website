@@ -166,6 +166,28 @@ body {
   padding: 7px 12px;
   border-radius: 999px;
   cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-alert-dot {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff2d55;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.16), 0 0 16px rgba(255, 45, 85, 0.55);
+}
+
+.nav-item.active .nav-alert-dot,
+.nav-item:hover .nav-alert-dot {
+  border-color: #fff;
+  background: #ff1744;
 }
 
 .nav-item.active,
@@ -790,6 +812,27 @@ select {
   overflow: hidden;
 }
 
+.community-user-card.is-pending {
+  border-color: rgba(255, 45, 85, 0.42);
+  background: linear-gradient(145deg, #fff8fb, #f8fbff);
+  box-shadow: 0 16px 38px rgba(255, 45, 85, 0.10), 0 10px 24px rgba(26, 57, 114, 0.08);
+}
+
+.community-pending-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2d55, #ff7a45);
+  box-shadow: 0 10px 22px rgba(255, 45, 85, 0.26);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
 .community-user-card::before,
 .audit-list-card::before,
 .audit-message-card::before {
@@ -1098,4 +1141,45 @@ select {
   font-size: 14px;
   line-height: 1.7;
   white-space: pre-line;
+}
+
+/* Caret guard for admin/auth UI: avoid accidental blinking text cursor on cards. */
+body,
+.admin-shell,
+.sidebar,
+.nav-btn,
+.card,
+.panel,
+.login-page,
+.login-card,
+.login-card h1,
+.login-card p,
+.login-card a,
+.login-card button {
+  caret-color: transparent;
+}
+
+.sidebar,
+.sidebar *,
+.nav-btn,
+.login-card h1,
+.login-card p,
+.login-switch,
+.login-switch * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable="plaintext-only"],
+.editor,
+.editor *,
+pre,
+code {
+  caret-color: auto;
+  -webkit-user-select: text;
+  user-select: text;
 }

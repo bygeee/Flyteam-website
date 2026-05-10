@@ -238,6 +238,10 @@ func (s *Server) communityProfileStats(userPK string) map[string]any {
 }
 
 func (s *Server) handleGetCommunityUser(w http.ResponseWriter, r *http.Request, raw string) {
+	if !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
 	pk, err := s.resolveCommunityUserPK(raw)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "User not found.")

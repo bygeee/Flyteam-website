@@ -13,10 +13,10 @@
     <nav>
       <a href="/">首页</a>
       <a class="active" href="/blog">博客广场</a>
-      <a href="/editor">写文章</a>
-      <a href="/messages">私信</a>
-      <a href="/groups">群聊</a>
-      <a href="/account">个人中心</a>
+      <a class="community-auth-only" href="/editor">写文章</a>
+      <a class="community-auth-only" href="/messages">私信</a>
+      <a class="community-auth-only" href="/groups">群聊</a>
+      <a class="community-auth-only" href="/account">个人中心</a>
     </nav>
   </header>
 
@@ -27,8 +27,10 @@
         <h1>把比赛复盘、技术笔记和团队经验，做成真正好看的校园博客。</h1>
         <p class="campus-hero-desc">灵感参考校园社团 / 学术社区类 Dribbble 作品：大留白、强视觉、Bento 卡片、杂志式排版。这里是 Flyteam 成员公开沉淀知识的入口。</p>
         <div class="campus-hero-actions">
-          <a class="campus-primary" href="/editor">发布文章</a>
-          <a class="campus-secondary" href="/user-register">加入社区</a>
+          <a class="campus-primary community-auth-only" href="/editor">发布文章</a>
+          <a class="campus-primary community-guest-only" href="/user-login?next=/editor">登录后发布</a>
+          <a class="campus-secondary community-guest-only" href="/user-register">加入社区</a>
+          <a class="campus-secondary community-auth-only" href="/account">个人中心</a>
         </div>
       </div>
       <div class="campus-hero-stage" aria-hidden="true">
@@ -112,7 +114,8 @@
           <p class="campus-panel-kicker">WRITE</p>
           <h2>今天写点什么？</h2>
           <p>题解、项目复盘、工具教程、学习路线都可以沉淀为文章。</p>
-          <a class="campus-primary full" href="/editor">进入写作台</a>
+          <a class="campus-primary full community-auth-only" href="/editor">进入写作台</a>
+          <a class="campus-primary full community-guest-only" href="/user-login?next=/editor">登录后进入写作台</a>
         </section>
       </aside>
     </section>

@@ -113,13 +113,15 @@ func (s *Server) handleCommunitySearch(w http.ResponseWriter, r *http.Request) {
 		_ = rows.Close()
 	}
 	users := []map[string]any{}
-	userRows, err := s.db.Query(`SELECT id, user_id, nickname, COALESCE(avatar_url,''), COALESCE(bio,''), role, status, created_at, COALESCE(updated_at,''), COALESCE(last_login_at,'') FROM community_users WHERE status='active' AND (user_id LIKE ? ESCAPE '\' OR nickname LIKE ? ESCAPE '\' OR COALESCE(bio,'') LIKE ? ESCAPE '\') ORDER BY created_at DESC LIMIT ?`, pat, pat, pat, pageSize)
-	if err == nil {
-		defer userRows.Close()
-		for userRows.Next() {
-			var u CommunityUser
-			if userRows.Scan(&u.ID, &u.UserID, &u.Nickname, &u.AvatarURL, &u.Bio, &u.Role, &u.Status, &u.CreatedAt, &u.UpdatedAt, &u.LastLoginAt) == nil {
-				users = append(users, publicCommunityUser(u))
+	if s.communityFrontendAllowsRequest(r) {
+		userRows, err := s.db.Query(`SELECT id, user_id, nickname, COALESCE(avatar_url,''), COALESCE(bio,''), role, status, created_at, COALESCE(updated_at,''), COALESCE(last_login_at,'') FROM community_users WHERE status='active' AND (user_id LIKE ? ESCAPE '\' OR nickname LIKE ? ESCAPE '\' OR COALESCE(bio,'') LIKE ? ESCAPE '\') ORDER BY created_at DESC LIMIT ?`, pat, pat, pat, pageSize)
+		if err == nil {
+			defer userRows.Close()
+			for userRows.Next() {
+				var u CommunityUser
+				if userRows.Scan(&u.ID, &u.UserID, &u.Nickname, &u.AvatarURL, &u.Bio, &u.Role, &u.Status, &u.CreatedAt, &u.UpdatedAt, &u.LastLoginAt) == nil {
+					users = append(users, publicCommunityUser(u))
+				}
 			}
 		}
 	}

@@ -3,7 +3,26 @@
   const token = () => localStorage.getItem("flyteam_user_token") || localStorage.getItem("user_token") || "";
   const csrf = () => sessionStorage.getItem("flyteam_user_csrf") || "";
   const escapeHTML = (s) => String(s || "").replace(/[&<>'"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
-  const state = { article: null };
+  const state = { article: null, authed: false };
+
+  async function initCommunityAuthUI() {
+    const headers = {};
+    if (token()) headers["X-User-Token"] = token();
+    let authed = false;
+    try {
+      const res = await fetch("/api/users/me", { credentials: "same-origin", cache: "no-store", headers });
+      if (res.ok) {
+        authed = true;
+        const data = await res.json().catch(() => ({}));
+        if (data && data.user) localStorage.setItem("flyteam_user", JSON.stringify(data.user));
+      }
+    } catch {
+      authed = false;
+    }
+    state.authed = authed;
+    document.body.classList.toggle("community-logged-in", authed);
+    document.body.classList.toggle("community-guest", !authed);
+  }
 
   async function fetchJSON(url, options = {}) {
     const headers = { ...(options.headers || {}) };
@@ -139,6 +158,7 @@
   $("articleCommentInput")?.addEventListener("keydown", (event) => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) sendComment(); });
   bindReaction("articleLikeBtn", "like", "已点赞", "点赞");
   bindReaction("articleFavoriteBtn", "favorite", "已收藏", "收藏");
+  initCommunityAuthUI();
   initArticle();
   loadComments();
 })();

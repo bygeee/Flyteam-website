@@ -175,6 +175,20 @@ func TestCommunityRegistrationRequiresAdminApproval(t *testing.T) {
 	}
 
 	blogToken := adminAPIToken(s, "blog_admin")
+	pendingList := adminAPIReq(s, http.MethodGet, "/api/admin/community/users", blogToken, nil)
+	if pendingList.Code != http.StatusOK {
+		t.Fatalf("blog admin pending list status=%d body=%s", pendingList.Code, pendingList.Body.String())
+	}
+	var pendingBody struct {
+		PendingCount int              `json:"pending_count"`
+		Items        []map[string]any `json:"items"`
+	}
+	if err := json.Unmarshal(pendingList.Body.Bytes(), &pendingBody); err != nil {
+		t.Fatal(err)
+	}
+	if pendingBody.PendingCount != 1 || len(pendingBody.Items) == 0 || pendingBody.Items[0]["status"] != "pending" {
+		t.Fatalf("pending users should be counted and listed first: %#v", pendingBody)
+	}
 	approve := adminAPIReq(s, http.MethodPut, "/api/admin/community/users/neo/status", blogToken, map[string]any{"status": "active"})
 	if approve.Code != http.StatusOK {
 		t.Fatalf("blog admin approve status=%d body=%s", approve.Code, approve.Body.String())

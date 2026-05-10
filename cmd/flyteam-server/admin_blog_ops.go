@@ -259,12 +259,18 @@ func (s *Server) handleAdminCommunityUsers(w http.ResponseWriter, r *http.Reques
 	whereSQL := strings.Join(where, " AND ")
 	var total int
 	_ = s.db.QueryRow(`SELECT COUNT(*) FROM community_users WHERE `+whereSQL, args...).Scan(&total)
+	pendingWhere := []string{"status='pending'"}
+	if normalizeRole(admin.Role) != "superadmin" {
+		pendingWhere = append(pendingWhere, "LOWER(role) NOT IN ('admin','superadmin')")
+	}
+	var pendingCount int
+	_ = s.db.QueryRow(`SELECT COUNT(*) FROM community_users WHERE ` + strings.Join(pendingWhere, " AND ")).Scan(&pendingCount)
 	listArgs := append([]any{}, args...)
 	listArgs = append(listArgs, pageSize, offset)
 	rows, err := s.db.Query(`SELECT id, user_id, nickname, COALESCE(avatar_url,''), COALESCE(bio,''), role, status, created_at, COALESCE(updated_at,''), COALESCE(last_login_at,'')
 		FROM community_users WHERE `+whereSQL+`
-		ORDER BY CASE LOWER(role) WHEN 'superadmin' THEN 0 WHEN 'admin' THEN 1 WHEN 'moderator' THEN 2 ELSE 3 END,
-		CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 WHEN 'muted' THEN 2 WHEN 'banned' THEN 3 ELSE 4 END,
+		ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 WHEN 'muted' THEN 2 WHEN 'banned' THEN 3 ELSE 4 END,
+		CASE LOWER(role) WHEN 'superadmin' THEN 0 WHEN 'admin' THEN 1 WHEN 'moderator' THEN 2 ELSE 3 END,
 		created_at DESC LIMIT ? OFFSET ?`, listArgs...)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Failed to load community users.")
@@ -288,7 +294,7 @@ func (s *Server) handleAdminCommunityUsers(w http.ResponseWriter, r *http.Reques
 	for _, u := range rawUsers {
 		items = append(items, s.publicAdminCommunityUser(u))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items, "total": total, "page": page, "page_size": pageSize, "has_more": offset+len(items) < total})
+	writeJSON(w, http.StatusOK, map[string]any{"items": items, "total": total, "pending_count": pendingCount, "page": page, "page_size": pageSize, "has_more": offset+len(items) < total})
 }
 
 func (s *Server) handleCreateAdminCommunityUser(w http.ResponseWriter, r *http.Request) {

@@ -233,6 +233,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.handleBlogClosedPage(w, r)
 		return
 	}
+	if isPrivateCommunityFrontendPath(path) && !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
+	if isPrivateCommunityAPIRequest(path, r.Method) && !s.communityFrontendAllowsRequest(r) {
+		s.handleCommunityLoginRequired(w, r)
+		return
+	}
 	if isMutating(r.Method) && s.requiresAdminCSRF(path) {
 		if err := s.checkCSRF(r); err != nil {
 			writeError(w, http.StatusForbidden, err.Error())

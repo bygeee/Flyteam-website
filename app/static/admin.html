@@ -64,7 +64,8 @@
         :class="['nav-item', { active: activeFeature === item.key }]"
         @click="setActiveFeature(item.key)"
       >
-        {{ item.label }}
+        <span>{{ item.label }}</span>
+        <span v-if="item.key === 'communityUsers' && pendingCommunityUserCount" class="nav-alert-dot" :title="`${pendingCommunityUserCount} 个待审核用户`"></span>
       </button>
     </nav>
 
@@ -517,7 +518,8 @@
           <p class="hint">{{ communityUserText }}</p>
 
           <div class="recruit-groups community-user-grid">
-            <section class="group-card community-user-card" v-for="user in communityUsers" :key="user.user_pk || user.id">
+            <section :class="['group-card community-user-card', { 'is-pending': isPendingCommunityUser(user) }]" v-for="user in sortedCommunityUsers" :key="user.user_pk || user.id">
+              <span v-if="isPendingCommunityUser(user)" class="community-pending-badge">待审核</span>
               <div class="community-user-head">
                 <span class="community-avatar" :class="{ 'has-img': !!user.avatar_url }">
                   <img v-if="user.avatar_url" :src="user.avatar_url" :alt="user.nickname" />
