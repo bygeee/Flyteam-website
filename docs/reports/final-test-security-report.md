@@ -48,12 +48,12 @@
 
 | 文件 | 说明 |
 |---|---|
-| `cmd/flyteam-server/blog_site_state.go` | 新增博客站开放状态存储、读取、更新、关闭页渲染、博客 API 拦截判断 |
-| `cmd/flyteam-server/admin_blog_ops.go` | 新增 `/api/admin/blog/site-state` 管理接口路由 |
+| `cmd/flyteam-server/internal/app/admin_blog_site_state.go` | 新增博客站开放状态存储、读取、更新、关闭页渲染、博客 API 拦截判断 |
+| `cmd/flyteam-server/internal/app/admin_community_audit.go` | 新增 `/api/admin/blog/site-state` 管理接口路由 |
 | `cmd/flyteam-server/main.go` | 在请求入口处接入博客页面/API 关闭拦截 |
 | `app/static/admin.html` | 后台新增“博客开关”面板 |
 | `app/static/app.js` | 后台新增状态读取、保存、权限控制逻辑 |
-| `cmd/flyteam-server/admin_blog_ops_test.go` | 新增博客开关权限和访问拦截测试 |
+| `cmd/flyteam-server/internal/app/admin_community_audit_test.go` | 新增博客开关权限和访问拦截测试 |
 
 设计结果：
 

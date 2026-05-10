@@ -226,7 +226,7 @@ cmd/flyteam-server/
   notification.go          通知
   community_storage.go     社区数据存储接口
   community_models.go      社区数据结构
-  community_reserved.go    当前已经预留的 API 占位
+  user_community_status.go    当前已经预留的 API 占位
 ```
 
 ### 2.2 前端页面建议
@@ -492,7 +492,7 @@ created_at          TEXT NOT NULL
 代码文件：
 
 ```text
-cmd/flyteam-server/community_reserved.go
+cmd/flyteam-server/internal/app/user_community_status.go
 ```
 
 查询预留接口：
@@ -818,10 +818,10 @@ feature/community-user-auth
 负责文件：
 
 ```text
-cmd/flyteam-server/user_auth.go
-cmd/flyteam-server/user_profile.go
-cmd/flyteam-server/community_models.go
-cmd/flyteam-server/community_storage.go
+cmd/flyteam-server/internal/app/user_account.go
+cmd/flyteam-server/internal/app/user_account.go
+cmd/flyteam-server/internal/app/user_session.go
+cmd/flyteam-server/internal/database/database.go
 app/static/login.html      注意不要破坏管理员登录
 app/static/user_login.html 可新建普通用户登录页
 app/static/user_login.js
@@ -856,8 +856,8 @@ feature/community-blog-core
 负责文件：
 
 ```text
-cmd/flyteam-server/blog_article.go
-cmd/flyteam-server/blog_recommendation.go
+cmd/flyteam-server/internal/app/user_blog_articles.go
+cmd/flyteam-server/internal/app/user_search_notifications.go
 app/static/blog.html
 app/static/blog.js
 app/static/article.html
@@ -894,8 +894,8 @@ feature/community-blog-editor
 负责文件：
 
 ```text
-cmd/flyteam-server/upload.go
-cmd/flyteam-server/blog_article.go
+cmd/flyteam-server/internal/app/system_upload.go
+cmd/flyteam-server/internal/app/user_blog_articles.go
 app/static/editor.html
 app/static/editor.js
 app/static/community.css
@@ -928,8 +928,8 @@ feature/community-comments-interactions
 负责文件：
 
 ```text
-cmd/flyteam-server/blog_comment.go
-cmd/flyteam-server/blog_interaction.go
+cmd/flyteam-server/internal/app/user_blog_interactions.go
+cmd/flyteam-server/internal/app/user_blog_interactions.go
 app/static/article.js
 ```
 
@@ -959,8 +959,8 @@ feature/community-follow-space
 负责文件：
 
 ```text
-cmd/flyteam-server/social_follow.go
-cmd/flyteam-server/user_profile.go
+cmd/flyteam-server/internal/app/user_social_messages.go
+cmd/flyteam-server/internal/app/user_account.go
 app/static/space.html
 app/static/space.js
 ```
@@ -990,7 +990,7 @@ feature/community-private-message
 负责文件：
 
 ```text
-cmd/flyteam-server/message_private.go
+cmd/flyteam-server/internal/app/user_social_messages.go
 app/static/messages.html
 app/static/messages.js
 ```
@@ -1020,7 +1020,7 @@ feature/community-group-chat
 负责文件：
 
 ```text
-cmd/flyteam-server/group_chat.go
+cmd/flyteam-server/internal/app/user_groups.go
 app/static/groups.html
 app/static/groups.js
 ```
@@ -1051,8 +1051,8 @@ feature/community-search-notification
 负责文件：
 
 ```text
-cmd/flyteam-server/notification.go
-cmd/flyteam-server/blog_recommendation.go
+cmd/flyteam-server/internal/app/user_search_notifications.go
+cmd/flyteam-server/internal/app/user_search_notifications.go
 app/static/blog.js
 app/static/messages.js
 ```
@@ -1081,7 +1081,7 @@ feature/community-admin-moderation
 负责文件：
 
 ```text
-cmd/flyteam-server/admin_community.go
+cmd/flyteam-server/internal/app/admin_community_audit.go
 app/static/admin.html
 app/static/app.js
 ```
@@ -1107,7 +1107,7 @@ app/static/app.js
 
 当前已完成：
 
-- `community_reserved.go`
+- `user_community_status.go`
 - `GET /api/community/status`
 - 本文档
 
@@ -1410,7 +1410,7 @@ node --check app/static/groups.js
 
 ## 16. 给协作者的约定
 
-1. 先看本文档，再看 `cmd/flyteam-server/community_reserved.go`。
+1. 先看本文档，再看 `cmd/flyteam-server/internal/app/user_community_status.go`。
 2. 不要随意改已有官网 API。
 3. 不要把普通用户登录塞进 `/api/admin/login`。
 4. 不要直接提交数据库、上传图片、`.env`。

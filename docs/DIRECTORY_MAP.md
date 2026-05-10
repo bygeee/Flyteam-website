@@ -64,28 +64,40 @@ python scripts/update_directory_map.py
 
 | 路径 | 说明 |
 | --- | --- |
-| `cmd/flyteam-server/internal/app/admin_blog_ops.go` | 博客站管理员/超级管理员操作、用户审核、审计接口。 |
-| `cmd/flyteam-server/internal/app/auth.go` | 宣传站管理员鉴权、会话、角色权限。 |
-| `cmd/flyteam-server/internal/app/blog_model.go` | 博客领域适配器，调用 internal/blog，保持原有 handler 调用不变。 |
-| `cmd/flyteam-server/internal/app/blog_site_state.go` | 博客站开放/关闭状态与前端访问控制。 |
-| `cmd/flyteam-server/internal/app/cache.go` | 数据库缓存控制与辅助逻辑。 |
-| `cmd/flyteam-server/internal/app/captcha.go` | 招新报名动态 C 语言验证码。 |
-| `cmd/flyteam-server/internal/app/community_auth.go` | 社区鉴权公共逻辑、会话校验、CSRF 校验。 |
-| `cmd/flyteam-server/internal/app/community_blog.go` | 博客文章发布、编辑、读取、浏览量等。 |
-| `cmd/flyteam-server/internal/app/community_dl_comments.go` | 博客评论、点赞、收藏等互动。 |
-| `cmd/flyteam-server/internal/app/community_dl_groups.go` | 群聊、群成员、群管理。 |
-| `cmd/flyteam-server/internal/app/community_dl_notify_search.go` | 通知与搜索。 |
-| `cmd/flyteam-server/internal/app/community_dl_routes.go` | 社区 API 路由分发。 |
-| `cmd/flyteam-server/internal/app/community_dl_social_messages.go` | 关注、好友、私信等社交消息。 |
-| `cmd/flyteam-server/internal/app/community_friends.go` | 好友申请与好友关系。 |
-| `cmd/flyteam-server/internal/app/community_grand_auth.go` | 社区用户注册、登录、资料与账号管理。 |
-| `cmd/flyteam-server/internal/app/community_reserved.go` | 社区预留/状态接口。 |
-| `cmd/flyteam-server/internal/app/content.go` | 官网内容聚合、排序、奖项/前辈墙/新闻等核心内容逻辑。 |
-| `cmd/flyteam-server/internal/app/content_review_recruit.go` | 团队回顾、相册、招新报名数据处理。 |
-| `cmd/flyteam-server/internal/app/database.go` | 数据库访问适配器，调用 internal/database。 |
-| `cmd/flyteam-server/internal/app/rag.go` | RAG 知识库、PDF 文本提取、向量检索、问答调用。 |
-| `cmd/flyteam-server/internal/app/server.go` | 服务启动、配置加载、HTTP 路由、静态文件服务和安全响应头。 |
-| `cmd/flyteam-server/internal/app/upload.go` | PDF、图片、头像等上传处理和文件安全校验。 |
+| `cmd/flyteam-server/internal/app/admin_auth.go` | 管理员后台鉴权、会话、角色权限和管理员账号管理。 |
+| `cmd/flyteam-server/internal/app/admin_blog_site_state.go` | 管理员后台博客站开放/关闭状态与访问控制。 |
+| `cmd/flyteam-server/internal/app/admin_community_audit.go` | 管理员/超级管理员的社区用户审核、权限管理和聊天审计接口。 |
+| `cmd/flyteam-server/internal/app/http_core.go` | HTTP 请求入口、安全响应头和全局前置校验。 |
+| `cmd/flyteam-server/internal/app/http_helpers.go` | HTTP/JSON、随机值、限流、时间、路径等通用辅助函数。 |
+| `cmd/flyteam-server/internal/app/http_static.go` | 静态资源、上传资源和页面文件安全访问。 |
+| `cmd/flyteam-server/internal/app/public_content.go` | 官网前台内容聚合、排序、奖项/前辈墙/新闻等核心逻辑。 |
+| `cmd/flyteam-server/internal/app/public_recruit_captcha.go` | 官网前台招新报名动态 C 语言验证码。 |
+| `cmd/flyteam-server/internal/app/public_review_recruit.go` | 官网前台团队回顾、相册、招新报名数据处理。 |
+| `cmd/flyteam-server/internal/app/routes.go` | 顶层路由分发入口，按静态资源、公共前台、用户前台、管理员后台和 API 分组。 |
+| `cmd/flyteam-server/internal/app/routes_admin_backend.go` | 管理员后台页面、管理员 API、后台鉴权/CSRF 权限边界。 |
+| `cmd/flyteam-server/internal/app/routes_public_api.go` | 匿名可访问的官网前台只读 API。 |
+| `cmd/flyteam-server/internal/app/routes_public_frontend.go` | 官网宣传站公共前台页面路由。 |
+| `cmd/flyteam-server/internal/app/routes_recruit.go` | 招新报名公开提交与管理员审核路由。 |
+| `cmd/flyteam-server/internal/app/routes_site_admin_content.go` | 宣传站内容管理后台 API 路由。 |
+| `cmd/flyteam-server/internal/app/routes_static.go` | 静态文件和上传文件路由。 |
+| `cmd/flyteam-server/internal/app/routes_system_api.go` | RAG、文件上传和系统工具 API 路由。 |
+| `cmd/flyteam-server/internal/app/routes_user_api.go` | 用户前台博客/社交/私信/群聊 API 路由。 |
+| `cmd/flyteam-server/internal/app/routes_user_frontend.go` | 用户前台博客、个人中心、私信、群聊页面路由。 |
+| `cmd/flyteam-server/internal/app/server.go` | 服务启动、配置加载和运行时依赖初始化。 |
+| `cmd/flyteam-server/internal/app/system_cache.go` | 数据库缓存控制与辅助逻辑。 |
+| `cmd/flyteam-server/internal/app/system_database_adapter.go` | 数据库访问适配器，调用 internal/database。 |
+| `cmd/flyteam-server/internal/app/system_rag.go` | RAG 知识库、PDF 文本提取、向量检索、问答调用。 |
+| `cmd/flyteam-server/internal/app/system_upload.go` | PDF、图片、头像等上传处理和文件安全校验。 |
+| `cmd/flyteam-server/internal/app/user_account.go` | 用户前台注册、登录、资料与账号管理。 |
+| `cmd/flyteam-server/internal/app/user_blog_articles.go` | 用户前台博客文章发布、编辑、读取、浏览量等。 |
+| `cmd/flyteam-server/internal/app/user_blog_interactions.go` | 用户前台博客评论、点赞、收藏等互动。 |
+| `cmd/flyteam-server/internal/app/user_blog_model.go` | 用户前台博客领域适配器，调用 internal/blog。 |
+| `cmd/flyteam-server/internal/app/user_community_status.go` | 用户前台社区预留/状态接口。 |
+| `cmd/flyteam-server/internal/app/user_friends.go` | 用户前台好友申请与好友关系。 |
+| `cmd/flyteam-server/internal/app/user_groups.go` | 用户前台群聊、群成员、群管理。 |
+| `cmd/flyteam-server/internal/app/user_search_notifications.go` | 用户前台通知与搜索。 |
+| `cmd/flyteam-server/internal/app/user_session.go` | 用户前台会话校验、登录态、CSRF 和用户权限辅助。 |
+| `cmd/flyteam-server/internal/app/user_social_messages.go` | 用户前台关注、好友、私信等社交消息。 |
 | `cmd/flyteam-server/internal/blog/blog.go` | 博客领域模型、文章请求校验、标签规范化和响应转换。 |
 | `cmd/flyteam-server/internal/database/database.go` | SQLite 连接、Schema 初始化、app_kv JSON 存取。 |
 | `cmd/flyteam-server/main.go` | Go 命令入口，仅调用 internal/app.Run。 |
@@ -172,33 +184,45 @@ python scripts/update_directory_map.py
 │       ├── main.go
 │       └── internal/
 │           ├── app/
-│           │   ├── admin_blog_ops.go
-│           │   ├── admin_blog_ops_test.go
-│           │   ├── auth.go
-│           │   ├── avatar_upload_test.go
-│           │   ├── blog_model.go
-│           │   ├── blog_site_state.go
-│           │   ├── cache.go
-│           │   ├── captcha.go
-│           │   ├── community_auth.go
-│           │   ├── community_blog.go
-│           │   ├── community_dl_comments.go
-│           │   ├── community_dl_groups.go
-│           │   ├── community_dl_notify_search.go
-│           │   ├── community_dl_routes.go
-│           │   ├── community_dl_social_messages.go
-│           │   ├── community_dl_test.go
-│           │   ├── community_friends.go
-│           │   ├── community_frontend_auth_test.go
-│           │   ├── community_grand_auth.go
-│           │   ├── community_reserved.go
-│           │   ├── content.go
-│           │   ├── content_review_recruit.go
-│           │   ├── content_senior_sort_test.go
-│           │   ├── database.go
-│           │   ├── rag.go
+│           │   ├── admin_auth.go
+│           │   ├── admin_blog_site_state.go
+│           │   ├── admin_community_audit.go
+│           │   ├── admin_community_audit_test.go
+│           │   ├── http_core.go
+│           │   ├── http_helpers.go
+│           │   ├── http_static.go
+│           │   ├── public_content.go
+│           │   ├── public_recruit_captcha.go
+│           │   ├── public_review_recruit.go
+│           │   ├── public_senior_sort_test.go
+│           │   ├── routes.go
+│           │   ├── routes_admin_backend.go
+│           │   ├── routes_public_api.go
+│           │   ├── routes_public_frontend.go
+│           │   ├── routes_recruit.go
+│           │   ├── routes_site_admin_content.go
+│           │   ├── routes_static.go
+│           │   ├── routes_system_api.go
+│           │   ├── routes_user_api.go
+│           │   ├── routes_user_frontend.go
 │           │   ├── server.go
-│           │   └── upload.go
+│           │   ├── system_cache.go
+│           │   ├── system_database_adapter.go
+│           │   ├── system_rag.go
+│           │   ├── system_upload.go
+│           │   ├── user_account.go
+│           │   ├── user_avatar_upload_test.go
+│           │   ├── user_blog_articles.go
+│           │   ├── user_blog_interactions.go
+│           │   ├── user_blog_model.go
+│           │   ├── user_community_status.go
+│           │   ├── user_community_test.go
+│           │   ├── user_friends.go
+│           │   ├── user_frontend_auth_test.go
+│           │   ├── user_groups.go
+│           │   ├── user_search_notifications.go
+│           │   ├── user_session.go
+│           │   └── user_social_messages.go
 │           ├── blog/
 │           │   └── blog.go
 │           └── database/
