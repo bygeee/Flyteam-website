@@ -122,6 +122,16 @@ feature/community-admin-moderation
 
 Go 后端已在 `cmd/flyteam-server/community_reserved.go` 预留 API，占位接口可通过 `GET /api/community/status` 查看。实际开发时，谁负责某个模块，就只实现对应模块的占位接口，并补齐权限校验和测试。
 
+## 目录明细同步要求
+
+如果本次改动新增、移动、删除了目录或关键文件，提交前必须更新目录明细：
+
+```bash
+python scripts/update_directory_map.py
+```
+
+然后把 `docs/DIRECTORY_MAP.md` 一起提交，保证其他协作者看到的项目结构永远是最新的。
+
 ## 本地运行
 
 本项目后端已整体迁移为 Go，前端资源位于 `app/static/pages`、`app/static/js`、`app/static/css`。

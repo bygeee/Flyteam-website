@@ -14,12 +14,18 @@
 
 ## 项目结构
 
-前端页面、脚本、样式已经拆分到不同目录，详细约定见：
+前端页面、脚本、样式已经拆分到不同目录：
 
 ```text
-docs/PROJECT_STRUCTURE.md
+docs/PROJECT_STRUCTURE.md   # 目录放置规范
+docs/DIRECTORY_MAP.md       # 自动生成的当前目录明细
 ```
 
+如果新增、移动、删除目录或关键文件，请运行：
+
+```bash
+python scripts/update_directory_map.py
+```
 ## 功能模块
 
 - 首页全屏照片墙/轮播

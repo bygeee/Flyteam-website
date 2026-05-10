@@ -37,3 +37,14 @@
 Go 服务仍以 `cmd/flyteam-server` 为入口。`serveStaticHTML` 会从 `app/static/pages/` 读取页面；`/static/js/` 和 `/static/css/` 由静态文件服务提供。
 
 为了兼容旧链接，`/static/*.html` 仍会映射到 `app/static/pages/*.html`；但新的页面开发不要再使用旧路径。
+
+
+## 目录明细更新
+
+`docs/DIRECTORY_MAP.md` 是自动生成的当前目录明细。每次新增、移动、删除目录或关键文件后，请运行：
+
+```bash
+python scripts/update_directory_map.py
+```
+
+并把更新后的 `docs/DIRECTORY_MAP.md` 一起提交。
