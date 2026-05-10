@@ -462,10 +462,25 @@ func seniorGradeRank(m M) int {
 	}
 	return -1
 }
+func seniorRoleRank(m M) int {
+	text := strings.TrimSpace(asString(m["grade"]))
+	low := strings.ToLower(text)
+	if strings.Contains(text, "帮主") || strings.Contains(low, "leader") {
+		return 2
+	}
+	if asBool(firstNonNil(m["responsible"], m["is_responsible"], m["is_manager"])) {
+		return 1
+	}
+	return 0
+}
 func seniorLess(a, b M) bool {
 	pa, pb := asBool(a["pinned"]), asBool(b["pinned"])
 	if pa != pb {
 		return pa
+	}
+	ra, rb := seniorRoleRank(a), seniorRoleRank(b)
+	if ra != rb {
+		return ra > rb
 	}
 	ga, gb := seniorGradeRank(a), seniorGradeRank(b)
 	if ga != gb {

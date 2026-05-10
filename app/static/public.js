@@ -167,10 +167,20 @@ function seniorGradeRank(item) {
   return Number.isFinite(num) && num > 0 ? num : -1;
 }
 
+function seniorRoleRank(item) {
+  const code = seniorGradeCode(item && item.grade);
+  if (code === "leader") return 2;
+  if (isResponsible(item)) return 1;
+  return 0;
+}
+
 function compareSeniorRecords(a, b) {
   const pa = isPinned(a) ? 1 : 0;
   const pb = isPinned(b) ? 1 : 0;
   if (pa !== pb) return pb - pa;
+  const ra = seniorRoleRank(a);
+  const rb = seniorRoleRank(b);
+  if (ra !== rb) return rb - ra;
   const ga = seniorGradeRank(a);
   const gb = seniorGradeRank(b);
   if (ga !== gb) return gb - ga;

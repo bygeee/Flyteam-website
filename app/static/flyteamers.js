@@ -51,10 +51,20 @@ function isResponsible(item) {
   return String(value || "").trim().toLowerCase() === "true" || String(value || "").trim() === "负责人";
 }
 
+function seniorRoleRank(item) {
+  const gradeCode = parseGradeCode(item && item.grade);
+  if (gradeCode === "leader") return 2;
+  if (isResponsible(item)) return 1;
+  return 0;
+}
+
 function compareSeniors(a, b) {
   const pa = isPinned(a) ? 1 : 0;
   const pb = isPinned(b) ? 1 : 0;
   if (pa !== pb) return pb - pa;
+  const ra = seniorRoleRank(a);
+  const rb = seniorRoleRank(b);
+  if (ra !== rb) return rb - ra;
   const ga = parseGradeCode(a.grade);
   const gb = parseGradeCode(b.grade);
   const rankA = gradeSortRank(ga);
