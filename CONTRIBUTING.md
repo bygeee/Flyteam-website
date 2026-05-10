@@ -102,7 +102,8 @@ compare branch: feature/功能名
 如果参与“普通用户注册、博客文章、评论、关注、私信、群聊”等大型改造，请先阅读仓库根目录：
 
 ```text
-BLOG_COMMUNITY_ROADMAP.md
+docs/planning/blog-community-roadmap.md
+docs/planning/team-task-allocation.md
 ```
 
 建议按模块开分支，避免多人同时改同一批文件：
@@ -119,11 +120,21 @@ feature/community-search-notification
 feature/community-admin-moderation
 ```
 
-Go 后端已在 `cmd/flyteam-server/community_reserved.go` 预留 API，占位接口可通过 `GET /api/community/status` 查看。实际开发时，谁负责某个模块，就只实现对应模块的占位接口，并补齐权限校验和测试。
+Go 后端已在 `cmd/flyteam-server/internal/app/user_community_status.go` 预留 API，占位接口可通过 `GET /api/community/status` 查看。实际开发时，谁负责某个模块，就只实现对应模块的占位接口，并补齐权限校验和测试。
+
+## 目录明细同步要求
+
+如果本次改动新增、移动、删除了目录或关键文件，提交前必须更新目录明细：
+
+```bash
+python scripts/update_directory_map.py
+```
+
+然后把 `docs/DIRECTORY_MAP.md` 一起提交，保证其他协作者看到的项目结构永远是最新的。
 
 ## 本地运行
 
-本项目后端已整体迁移为 Go，前端仍然是 `app/static/` 下的静态页面。
+本项目后端已整体迁移为 Go，前端资源位于 `app/static/pages`、`app/static/js`、`app/static/css`。
 
 ```bash
 go version
@@ -153,9 +164,9 @@ http://127.0.0.1:8000
 gofmt -w cmd/flyteam-server
 go test ./...
 go build ./cmd/flyteam-server
-node --check app/static/public.js
-node --check app/static/news.js
-node --check app/static/app.js
+node --check app/static/js/public.js
+node --check app/static/js/news.js
+node --check app/static/js/app.js
 ```
 
 如果只改了前端页面，也建议本地启动网站手动检查对应页面和管理员后台。

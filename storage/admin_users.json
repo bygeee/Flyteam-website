@@ -1,0 +1,124 @@
+{
+  "users": [
+    {
+      "id": "272d2face018",
+      "username": "z3ghxxx",
+      "display_name": "Super Administrator",
+      "role": "superadmin",
+      "salt": "8059f14efaa271dc88378ec79c484194",
+      "password_hash": "32e1adf6f1e9bcc2aa2076c1e41f5d870b5cf0df1d50ac61cb87344244cd262e",
+      "created_at": "2026-05-08T13:43:40.825804+00:00",
+      "last_login_at": "2026-05-09T13:16:28.416188+00:00"
+    },
+    {
+      "id": "20b554531b37",
+      "username": "dong",
+      "display_name": "dong",
+      "role": "superadmin",
+      "salt": "5606bd3bfdd491a7977ccf1b34d3cb7c",
+      "password_hash": "00993d3caf25a00e52cdbcb70c8a61f35b920fe6f55f39e005cdd3582100dd6a",
+      "created_at": "2026-05-08T16:32:48.214287+00:00",
+      "last_login_at": "2026-05-09T14:50:06.020011+00:00"
+    },
+    {
+      "id": "61816812d884",
+      "username": "linuu",
+      "display_name": "linuu",
+      "role": "admin",
+      "salt": "48a963a56fee8772e93be4de916a9db4",
+      "password_hash": "12f364d678f7fdd1d02b17702b1cffdc181a9cc2cf41b26256f66aa2ee03f209",
+      "created_at": "2026-05-08T16:35:38.326561+00:00",
+      "last_login_at": "2026-05-09T18:23:28.964881+00:00"
+    },
+    {
+      "id": "d23bd71fa224",
+      "username": "ukio",
+      "display_name": "ukio",
+      "role": "admin",
+      "salt": "9c2fa9603ddb334e81032153b97f853f",
+      "password_hash": "837373ca25e66378ac85ca9b7a69ba997f71acc5abe8ca70b36881e5c4018b68",
+      "created_at": "2026-05-08T16:35:51.478040+00:00",
+      "last_login_at": "2026-05-09T17:55:27.379602+00:00"
+    },
+    {
+      "id": "59369298da48",
+      "username": "grand",
+      "display_name": "grand",
+      "role": "admin",
+      "salt": "1646b0e416c70ccdad89127c6f103b7d",
+      "password_hash": "5352a87ea2d3fe24ed1f9f4b508234657689a750406d1dbf9fca3d177a20ec44",
+      "created_at": "2026-05-08T16:37:40.621600+00:00",
+      "last_login_at": "2026-05-09T15:51:10.930870+00:00"
+    },
+    {
+      "id": "282b57fdeaeb",
+      "username": "Saintjim",
+      "display_name": "Saintjim",
+      "role": "admin",
+      "salt": "b60235a75cc5af764f0f1aabef7c48e9",
+      "password_hash": "1527390be67601eed57984a6ff02f059cdcde2ead63ec3ea7ad03c731e988fb9",
+      "created_at": "2026-05-08T16:37:54.629920+00:00",
+      "last_login_at": "2026-05-09T17:51:59.077309+00:00"
+    },
+    {
+      "id": "c485294e99b4",
+      "username": "rayyyy",
+      "display_name": "rayyyy",
+      "role": "admin",
+      "salt": "5380b38db3a9b2cf70ced57a96c616bb",
+      "password_hash": "c78e88295fadecae15314cac8652705fc76efce1b116b71facf342ad62410057",
+      "created_at": "2026-05-09T07:44:58.252354+00:00",
+      "last_login_at": "2026-05-09T13:14:17.617848+00:00"
+    },
+    {
+      "id": "df3e083d61d0",
+      "username": "b2tmy",
+      "display_name": "b2tmy",
+      "role": "admin",
+      "salt": "555b51fe9b2fa6927c47f14743538ecb",
+      "password_hash": "dcadc23e5f4c55669d821dcd14c93a80686a6a1b6a269162461715ff915941c5",
+      "created_at": "2026-05-09T13:28:34.915583+00:00",
+      "last_login_at": "2026-05-09T13:49:01.438343+00:00"
+    },
+    {
+      "id": "886d49378d19",
+      "username": "tinyelm",
+      "display_name": "",
+      "role": "admin",
+      "salt": "0326412d78203614cfba3ff43fdb6133",
+      "password_hash": "de103257fa774e1db1dfe5c4975b0284880372fd50c80e88f7bae6dbd5ad69ef",
+      "created_at": "2026-05-09T13:41:03.062193+00:00",
+      "last_login_at": "2026-05-09T14:53:04.666290+00:00"
+    },
+    {
+      "id": "10c6e682d13c",
+      "username": "Liangpaopao",
+      "display_name": "",
+      "role": "admin",
+      "salt": "86f7bad572eea7453f06f23b4a280f8f",
+      "password_hash": "09338d9ae879181e5ff66103e19fb557af4a907e4092797ed9a4b2efc61c8b6c",
+      "created_at": "2026-05-09T14:52:37.422150+00:00",
+      "last_login_at": "2026-05-09T14:53:08.587223+00:00"
+    },
+    {
+      "id": "a22c5722c893",
+      "username": "chen",
+      "display_name": "",
+      "role": "admin",
+      "salt": "4fa8f1dba45e9fc2da01482695ea3e6e",
+      "password_hash": "c0456114fa43dfe06a07cb773620af3510a3f8c388607ca26bbdcfeb79094d94",
+      "created_at": "2026-05-09T15:58:00.561560+00:00",
+      "last_login_at": "2026-05-09T16:00:06.450936+00:00"
+    },
+    {
+      "id": "2320ecd238c0",
+      "username": "enigma",
+      "display_name": "",
+      "role": "admin",
+      "salt": "f4972508f69e3630efcaeaedb87a81dc",
+      "password_hash": "b7a11aa87262324f6a5f2fdbc8fc44c3baf80a8fce6b2690d975e3a2db0ea4ce",
+      "created_at": "2026-05-09T16:12:21.964051+00:00",
+      "last_login_at": "2026-05-09T16:37:34.692015+00:00"
+    }
+  ]
+}

@@ -33,9 +33,9 @@
 ```bash
 go test ./...
 go build ./cmd/flyteam-server
-node --check app/static/public.js
-node --check app/static/news.js
-node --check app/static/app.js
+node --check app/static/js/public.js
+node --check app/static/js/news.js
+node --check app/static/js/app.js
 ```
 
 ## 截图/效果图
@@ -60,4 +60,5 @@ node --check app/static/app.js
 - [ ] 没有提交 `.venv`、缓存、上传图片、运行日志
 - [ ] 没有删除线上需要保留的数据文件
 - [ ] 代码没有明显报错
+- [ ] 如果新增/移动/删除目录或关键文件，已运行 `python scripts/update_directory_map.py` 并提交 `docs/DIRECTORY_MAP.md`
 - [ ] PR 标题能清楚表达修改内容

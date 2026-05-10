@@ -1,0 +1,90 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flyteam 好友与私信</title>
+  <link rel="stylesheet" href="/static/css/community.css?v=community-ui-20260510b" />
+</head>
+<body class="community-page wechat-page social-chat-page">
+  <main class="wechat-shell">
+    <header class="wechat-top social-hero">
+      <div>
+        <p class="wechat-kicker">FLYTEAM SOCIAL DESK</p>
+        <h1>好友与私信</h1>
+        <p>像 QQ / 微信一样：先申请好友，通过后进入联系人列表，点击头像即可私聊。聊天记录、会话、未读状态全部保存在数据库。</p>
+      </div>
+      <nav class="community-nav social-nav">
+        <a href="/">首页</a>
+        <a href="/blog">博客广场</a>
+        <a href="/groups">群聊</a>
+        <a href="/account">个人中心</a>
+      </nav>
+    </header>
+
+    <section class="wechat-layout social-app-layout">
+      <aside class="wechat-panel social-sidebar">
+        <section class="wechat-card add-friend-card glass-card">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">ADD FRIEND</p>
+              <h2>添加好友</h2>
+            </div>
+          </div>
+          <form id="friendRequestForm" class="wechat-form search-friend-form">
+            <input id="friendTarget" placeholder="输入对方用户 ID，例如 z3ghxxx" autocomplete="off" />
+            <input id="friendMessage" placeholder="申请备注，可留空" maxlength="120" autocomplete="off" />
+            <button class="community-btn primary glow-btn" type="submit">发送好友申请</button>
+          </form>
+          <p id="friendStatus" class="wechat-muted status-line"></p>
+        </section>
+
+        <section class="wechat-card glass-card">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">REQUESTS</p>
+              <h2>好友申请</h2>
+            </div>
+            <button id="refreshRequests" class="community-btn ghost-btn" type="button">刷新</button>
+          </div>
+          <div id="friendRequests" class="friend-request-list request-stack"></div>
+        </section>
+
+        <section class="wechat-card friend-list-card glass-card">
+          <div class="wechat-section-head compact-head">
+            <div>
+              <p class="mini-label">CONTACTS</p>
+              <h2>通讯录</h2>
+            </div>
+            <span id="friendCount" class="wechat-badge">0</span>
+          </div>
+          <div id="friendList" class="friend-list contact-list"></div>
+        </section>
+      </aside>
+
+      <section class="wechat-chat-panel social-chat-panel glass-card">
+        <div class="chat-titlebar social-chat-titlebar">
+          <div class="peer-head">
+            <div id="chatPeerAvatar" class="chat-peer-avatar">F</div>
+            <div>
+              <p class="mini-label">PRIVATE CHAT</p>
+              <h2 id="chatTitle">选择一个好友开始聊天</h2>
+              <p id="chatSubtitle" class="wechat-muted">好友消息会以会话形式保存，刷新页面也不会丢失。</p>
+            </div>
+          </div>
+          <button id="refreshConversations" class="community-btn ghost-btn" type="button">刷新会话</button>
+        </div>
+        <div id="conversationList" class="conversation-strip conversation-dock"></div>
+        <div id="messageBox" class="message-box wechat-message-box chat-canvas"></div>
+        <form id="messageForm" class="wechat-message-form chat-composer">
+          <textarea id="messageText" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+          <button class="community-btn primary send-btn" type="submit">发送</button>
+        </form>
+        <p id="messageStatus" class="wechat-muted status-line"></p>
+      </section>
+    </section>
+  </main>
+  <script src="/static/js/messages.js"></script>
+</body>
+</html>
+

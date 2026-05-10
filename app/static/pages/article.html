@@ -1,0 +1,75 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flyteam 文章详情</title>
+  <link rel="stylesheet" href="/static/css/public.css" />
+  <link rel="stylesheet" href="/static/css/community.css" />
+</head>
+<body class="campus-article-page">
+  <header class="campus-blog-nav article-nav">
+    <a class="campus-blog-brand" href="/"><span>Fly</span>team</a>
+    <nav>
+      <a href="/blog">博客广场</a>
+      <a class="community-auth-only" href="/editor">写文章</a>
+      <a class="community-auth-only" href="/messages">私信</a>
+      <a class="community-auth-only" href="/groups">群聊</a>
+      <a class="community-auth-only" href="/account">个人中心</a>
+    </nav>
+  </header>
+
+  <main class="campus-article-shell">
+    <a class="article-back" href="/blog">← 返回博客广场</a>
+    <section id="articleHero" class="campus-article-hero">
+      <p class="campus-pill">ARTICLE</p>
+      <h1>正在加载文章...</h1>
+      <p>Flyteam Campus Blog</p>
+    </section>
+
+    <section class="campus-reader-grid">
+      <aside class="reader-side reader-left">
+        <div class="reader-sticky-card">
+          <p class="campus-panel-kicker">AUTHOR</p>
+          <div id="articleAuthorCard" class="article-author-card">加载中...</div>
+          <div class="article-actions">
+            <button id="articleLikeBtn" class="campus-secondary" type="button">点赞</button>
+            <button id="articleFavoriteBtn" class="campus-secondary" type="button">收藏</button>
+            <a id="articleAuthorLink" class="campus-secondary" href="/blog">作者主页</a>
+          </div>
+          <p id="articleInteractionTip" class="reader-tip"></p>
+        </div>
+      </aside>
+
+      <article id="articleRoot" class="campus-reader-card">
+        <p class="reader-tip">正在加载文章内容...</p>
+      </article>
+
+      <aside class="reader-side reader-right">
+        <div class="reader-sticky-card">
+          <p class="campus-panel-kicker">ON THIS PAGE</p>
+          <h2>目录</h2>
+          <div id="articleToc" class="article-toc"><span>加载后生成</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="campus-comment-panel">
+      <div class="campus-section-head">
+        <div>
+          <p class="campus-panel-kicker">DISCUSSION</p>
+          <h2>评论讨论 <span id="articleCommentCount">0</span></h2>
+          <p>登录后可以参与讨论。Ctrl / ⌘ + Enter 快速发送。</p>
+        </div>
+      </div>
+      <div id="articleComments" class="campus-comment-list"><p class="reader-tip">正在加载评论...</p></div>
+      <div class="campus-comment-form">
+        <textarea id="articleCommentInput" placeholder="写下你的评论、补充或疑问"></textarea>
+        <button id="articleCommentSubmit" class="campus-primary" type="button">发表评论</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/article.js"></script>
+</body>
+</html>

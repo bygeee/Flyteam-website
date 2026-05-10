@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flyteam 个人中心</title>
+  <link rel="stylesheet" href="/static/css/public.css" />
+  <link rel="stylesheet" href="/static/css/community.css?v=account-caret-20260510" />
+</head>
+<body class="community-page account-page">
+  <header class="topbar account-topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">Flyteam</a>
+      <nav class="nav">
+        <a href="/blog">博客</a>
+        <a href="/editor">写文章</a>
+        <a href="/messages">好友私信</a>
+        <a href="/groups">群聊</a>
+        <a class="active" href="/account">个人中心</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="account-shell">
+    <section class="account-hero">
+      <div class="account-profile-card">
+        <div id="accountAvatar" class="account-avatar">F</div>
+        <div>
+          <p class="blog-eyebrow">USER CENTER</p>
+          <h1 id="accountDisplayName">个人中心</h1>
+          <p id="accountDisplayMeta">登录后管理资料、账号、安全和内容。</p>
+          <div class="account-hero-actions">
+            <a id="accountSpaceLink" class="community-btn primary" href="/space/me">查看主页</a>
+            <a class="community-btn" href="/editor">写文章</a>
+          </div>
+        </div>
+      </div>
+      <div class="account-stat-grid">
+        <div><b id="statArticles">0</b><span>文章</span></div>
+        <div><b id="statFollowers">0</b><span>粉丝</span></div>
+        <div><b id="statFollowing">0</b><span>关注</span></div>
+      </div>
+    </section>
+
+    <section class="account-layout">
+      <aside class="account-tabs" aria-label="个人中心导航">
+        <button class="active" data-tab="profile" type="button">资料设置</button>
+        <button data-tab="security" type="button">账号安全</button>
+        <button data-tab="articles" type="button">我的文章</button>
+        <button data-tab="social" type="button">社交入口</button>
+      </aside>
+
+      <section class="account-panels">
+        <section class="account-panel active" id="tab-profile">
+          <div class="account-panel-head"><h2>资料设置</h2><p>参考成熟社区 App：头像、昵称、账号 ID、简介都可以自主管理。</p></div>
+          <div class="avatar-uploader">
+            <div id="avatarPreview" class="account-avatar large">F</div>
+            <div>
+              <label class="community-btn primary avatar-upload-btn">上传头像<input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" /></label>
+              <p class="account-muted">支持 jpg / png / gif / webp，服务端会校验真实图片类型并过滤脚本内容。</p>
+            </div>
+          </div>
+          <form id="profileForm" class="account-form">
+            <label>昵称<input id="nickname" placeholder="你的展示昵称" required /></label>
+            <label>账号 ID<input id="userId" placeholder="用于登录和主页链接，例如 z3ghxxx" required /></label>
+            <label>头像 URL<input id="avatarUrl" placeholder="上传头像后自动填充，也可以填写图片 URL" /></label>
+            <label class="full">个人简介<textarea id="bio" rows="5" maxlength="500" placeholder="介绍你的方向、技能、比赛经历或博客定位"></textarea></label>
+            <div class="form-actions"><button class="community-btn primary" type="submit">保存资料</button><span id="profileMsg" class="account-muted"></span></div>
+          </form>
+        </section>
+
+        <section class="account-panel" id="tab-security">
+          <div class="account-panel-head"><h2>账号安全</h2><p>修改密码后请使用新密码重新登录。后续可继续扩展登录设备、二次验证、操作日志。</p></div>
+          <form id="passwordForm" class="account-form narrow">
+            <label>当前密码<input id="oldPassword" type="password" autocomplete="current-password" required /></label>
+            <label>新密码<input id="newPassword" type="password" autocomplete="new-password" placeholder="至少 8 位，不要使用弱密码" required /></label>
+            <div class="form-actions"><button class="community-btn primary" type="submit">修改密码</button><span id="passwordMsg" class="account-muted"></span></div>
+          </form>
+        </section>
+
+        <section class="account-panel" id="tab-articles">
+          <div class="account-panel-head"><h2>我的文章</h2><p>展示草稿和已发布内容，方便继续编辑。</p></div>
+          <div class="form-actions"><a class="community-btn primary" href="/editor">新建文章</a><button id="refreshMyArticles" class="community-btn" type="button">刷新</button></div>
+          <div id="myArticles" class="my-article-list"></div>
+        </section>
+
+        <section class="account-panel" id="tab-social">
+          <div class="account-panel-head"><h2>社交入口</h2><p>像微信一样从好友关系出发，进入私聊或拉群。</p></div>
+          <div class="social-entry-grid">
+            <a href="/messages"><strong>好友与私信</strong><span>申请好友、查看好友列表、选择好友私聊</span></a>
+            <a href="/groups"><strong>群聊</strong><span>从好友列表勾选成员，创建群聊并邀请好友</span></a>
+            <a href="/blog"><strong>博客广场</strong><span>阅读成员文章、搜索内容、查看推荐</span></a>
+            <a href="/editor"><strong>创作中心</strong><span>Markdown 写作、图片上传、草稿和发布</span></a>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+  <script src="/static/js/account.js?v=account-caret-20260510"></script>
+</body>
+</html>
+

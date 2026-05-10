@@ -1,0 +1,224 @@
+name: CI/CD
+
+"on":
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy current branch artifact to VPS when secrets are configured
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flyteam-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Set up Node.js for JS syntax checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          files="$(gofmt -l $(find cmd -name '*.go' -type f))"
+          if [ -n "$files" ]; then
+            echo "The following Go files need gofmt:" >&2
+            echo "$files" >&2
+            exit 1
+          fi
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Run Go vet
+        run: go vet ./...
+
+      - name: Check static JavaScript syntax
+        shell: bash
+        run: |
+          while IFS= read -r file; do
+            echo "node --check $file"
+            node --check "$file"
+          done < <(find app/static/js -name '*.js' -type f | sort)
+
+      - name: Build Linux amd64 binary
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags "-s -w" -o dist/flyteam-server ./cmd/flyteam-server
+
+      - name: Package deploy artifact
+        shell: bash
+        run: |
+          tar -czf dist/flyteam-release.tar.gz \
+            -C dist flyteam-server \
+            -C .. app .env.example README.md docs/PROJECT_STRUCTURE.md docs/DIRECTORY_MAP.md
+          tar -tzf dist/flyteam-release.tar.gz
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flyteam-linux-amd64-${{ github.sha }}
+          path: |
+            dist/flyteam-server
+            dist/flyteam-release.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Deploy to VPS
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == 'true')
+    environment: production
+
+    steps:
+      - name: Check deployment secrets
+        id: secrets
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          VPS_SERVICE: ${{ secrets.VPS_SERVICE }}
+        run: |
+          missing=0
+          for name in VPS_HOST VPS_USER VPS_PORT VPS_SSH_KEY VPS_DEPLOY_PATH VPS_SERVICE; do
+            if [ -z "${!name}" ]; then
+              echo "Missing secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip deploy when secrets are incomplete
+        if: steps.secrets.outputs.ready != 'true'
+        run: |
+          echo "Deployment skipped because one or more VPS_* secrets are not configured."
+          echo "CI has passed; configure GitHub repository secrets to enable CD."
+
+      - name: Checkout repository
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Build deployment package
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: amd64
+        shell: bash
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags "-s -w" -o dist/flyteam-server ./cmd/flyteam-server
+          tar -czf dist/flyteam-release.tar.gz \
+            -C dist flyteam-server \
+            -C .. app .env.example README.md docs/PROJECT_STRUCTURE.md docs/DIRECTORY_MAP.md
+
+      - name: Configure SSH
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/flyteam_deploy_key
+          chmod 600 ~/.ssh/flyteam_deploy_key
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload artifact to VPS
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          scp -P "$VPS_PORT" -i ~/.ssh/flyteam_deploy_key dist/flyteam-release.tar.gz "$VPS_USER@$VPS_HOST:/tmp/flyteam-release-${GITHUB_SHA}.tar.gz"
+
+      - name: Activate release on VPS
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          VPS_SERVICE: ${{ secrets.VPS_SERVICE }}
+        run: |
+          ssh -p "$VPS_PORT" -i ~/.ssh/flyteam_deploy_key "$VPS_USER@$VPS_HOST" \
+            "set -euo pipefail
+             mkdir -p '$VPS_DEPLOY_PATH'
+             cd '$VPS_DEPLOY_PATH'
+             tar -xzf '/tmp/flyteam-release-${GITHUB_SHA}.tar.gz'
+             chmod +x flyteam-server
+             mkdir -p storage storage/uploads
+             if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi
+             systemctl restart '$VPS_SERVICE'
+             systemctl is-active --quiet '$VPS_SERVICE'
+             rm -f '/tmp/flyteam-release-${GITHUB_SHA}.tar.gz'"
+
+      - name: Health check
+        if: steps.secrets.outputs.ready == 'true'
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          sleep 3
+          curl -fsSL --max-time 15 "http://$VPS_HOST/api/status" || curl -fsSL --max-time 15 "http://$VPS_HOST/"
+
