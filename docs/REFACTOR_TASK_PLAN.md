@@ -2,7 +2,11 @@
 
 ## 1. 文档目标
 
-本文档用于指导 6 人同时使用 Git 协作完成 Flyteam Website 的重构和新增功能开发。
+
+> 实际成员映射说明：当前项目实际参与人为 `z3`、`grand`、`dong`、`dl`、`wang` 五人。本文中 A-F 是能力模块拆分参考，真实执行分工以 `docs/planning/team-task-allocation.md` 为准：`z3` 和 `grand` 负责后端，`dong`、`dl`、`wang` 负责前端。
+
+
+本文档用于指导团队使用 Git 协作完成 Flyteam Website 的重构和新增功能开发。当前实际五人分工见 `docs/planning/team-task-allocation.md`。
 
 本次重构目标包括：
 
@@ -53,7 +57,7 @@ main
 - 涉及公共接口、数据库表、DTO 的改动必须先同步给其他成员。
 - 每天至少同步一次 `develop`，避免长期分叉。
 
-## 4. 6 人职责总览
+## 4. 能力角色职责总览（实际 5 人映射见分工文档）
 
 | 成员 | 负责方向 | 主要目录所有权 | 主要产出 |
 | --- | --- | --- | --- |

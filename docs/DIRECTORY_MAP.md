@@ -40,13 +40,18 @@ python scripts/update_directory_map.py
 | 路径 | 说明 |
 | --- | --- |
 | `.env.example` | 环境变量模板。 |
+| `.github/workflows/ci-cd.yml` | GitHub Actions CI/CD：测试、构建、打包和可选 VPS 自动部署。 |
 | `.gitignore` | Git 忽略规则，排除密钥、运行数据、上传文件、日志和本地缓存。 |
 | `CONTRIBUTING.md` | 协作流程说明。 |
 | `README.md` | 项目总说明和本地运行指南。 |
+| `docs/CI_CD.md` | GitHub Actions CI/CD 与 VPS 自动部署配置说明。 |
 | `docs/DIRECTORY_MAP.md` | 自动生成的项目目录明细。 |
 | `docs/PROJECT_STRUCTURE.md` | 目录结构约定和新增文件放置规范。 |
+| `docs/REFACTOR_ARCHITECTURE.md` | 下一阶段 Go + Gin / Vue 前后端分离目标架构说明。 |
+| `docs/REFACTOR_REQUIREMENTS.md` | 下一阶段重构与新增功能需求说明。 |
+| `docs/REFACTOR_TASK_PLAN.md` | 下一阶段重构任务拆分、阶段计划与成员映射说明。 |
 | `docs/planning/blog-community-roadmap.md` | 博客社区化改造路线图。 |
-| `docs/planning/team-task-allocation.md` | z3 / grand / dl 任务分配。 |
+| `docs/planning/team-task-allocation.md` | 五人协作任务分配：z3/grand 后端，dong/dl/wang 前端。 |
 | `docs/reports/final-test-security-report.md` | 功能与安全测试报告。 |
 | `go.mod` | Go 模块定义。 |
 | `go.sum` | Go 依赖校验锁定文件。 |
@@ -128,9 +133,11 @@ python scripts/update_directory_map.py
 ├── .github/
 │   ├── CODEOWNERS
 │   ├── PULL_REQUEST_TEMPLATE.md
-│   └── ISSUE_TEMPLATE/
-│       ├── bug_report.md
-│       └── feature_request.md
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   └── workflows/
+│       └── ci-cd.yml
 ├── app/
 │   └── static/
 │       ├── assets/
@@ -228,8 +235,12 @@ python scripts/update_directory_map.py
 │           └── database/
 │               └── database.go
 ├── docs/
+│   ├── CI_CD.md
 │   ├── DIRECTORY_MAP.md
 │   ├── PROJECT_STRUCTURE.md
+│   ├── REFACTOR_ARCHITECTURE.md
+│   ├── REFACTOR_REQUIREMENTS.md
+│   ├── REFACTOR_TASK_PLAN.md
 │   ├── knowledge/
 │   │   └── .gitkeep
 │   ├── planning/
