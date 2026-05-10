@@ -219,7 +219,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := cleanPath(r.URL.Path)
-	if path == "/static/admin.html" || path == "/static/app.js" {
+	if isAdminStaticAsset(path) {
 		if _, ok := s.adminFromRequest(r); !ok {
 			if wantsJSON(r) {
 				writeError(w, http.StatusUnauthorized, "Admin login required.")
@@ -253,6 +253,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) route(w http.ResponseWriter, r *http.Request, path string) {
 	if strings.HasPrefix(path, "/static/") {
+		rel := strings.TrimPrefix(path, "/static/")
+		if strings.HasPrefix(rel, "pages/") {
+			http.NotFound(w, r)
+			return
+		}
+		if strings.HasSuffix(rel, ".html") && !strings.Contains(rel, "/") {
+			s.serveStaticHTML(w, r, rel)
+			return
+		}
 		s.serveFileRoot(w, r, s.cfg.StaticDir, strings.TrimPrefix(path, "/static/"))
 		return
 	}
@@ -478,7 +487,16 @@ func (s *Server) setSecurityHeaders(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) serveStaticHTML(w http.ResponseWriter, r *http.Request, name string) {
 	w.Header().Set("Cache-Control", "no-store")
-	http.ServeFile(w, r, filepath.Join(s.cfg.StaticDir, name))
+	http.ServeFile(w, r, filepath.Join(s.cfg.StaticDir, "pages", name))
+}
+
+func isAdminStaticAsset(path string) bool {
+	switch path {
+	case "/static/admin.html", "/static/pages/admin.html", "/static/app.js", "/static/js/app.js":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Server) serveFileRoot(w http.ResponseWriter, r *http.Request, root, rel string) {

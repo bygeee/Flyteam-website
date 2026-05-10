@@ -7,10 +7,18 @@
 ## 技术栈
 
 - 后端：Go
-- 前端：原静态 HTML / CSS / JS 页面保持不变
+- 前端：静态 HTML / CSS / JS，按 `app/static/pages`、`app/static/css`、`app/static/js` 分层
 - 数据：SQLite `storage/flyteam.db`，并兼容旧版 `storage/*.json` 自动迁移
 - 上传文件：`storage/uploads/`
 - RAG：Go 后端直接调用 DashScope/OpenAI-compatible Embeddings + Chat API
+
+## 项目结构
+
+前端页面、脚本、样式已经拆分到不同目录，详细约定见：
+
+```text
+docs/PROJECT_STRUCTURE.md
+```
 
 ## 功能模块
 
@@ -154,9 +162,9 @@ flyteam-server.exe
 ```bash
 go test ./...
 go build ./cmd/flyteam-server
-node --check app/static/public.js
-node --check app/static/news.js
-node --check app/static/app.js
+node --check app/static/js/public.js
+node --check app/static/js/news.js
+node --check app/static/js/app.js
 ```
 
 ## 协作方式
@@ -178,8 +186,8 @@ CONTRIBUTING.md
 如果要把网站扩展为“普通用户注册 + CSDN 简易版博客空间 + 关注/私信/群聊”的社区系统，请先阅读：
 
 ```text
-BLOG_COMMUNITY_ROADMAP.md
-TEAM_TASK_ALLOCATION.md
+docs/planning/blog-community-roadmap.md
+docs/planning/team-task-allocation.md
 ```
 
 Go 后端已经预留社区 API 占位接口，可通过以下接口查看清单：

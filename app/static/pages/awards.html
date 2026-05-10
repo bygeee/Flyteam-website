@@ -1,18 +1,17 @@
 ﻿<!DOCTYPE html>
-<html lang="zh-CN" class="home-root">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flyteam</title>
-  <link rel="stylesheet" href="/static/public.css?v=home-no-float-20260510" />
+  <title>Flyteam Awards</title>
+  <link rel="stylesheet" href="/static/css/public.css" />
 </head>
-<body class="home-only">
-  <header class="topbar home-topbar">
+<body class="module-page awards-page">
+  <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">Flyteam</a>
       <nav class="nav">
           <a href="/">&#x9996;&#x9875;</a>
-          <a class="home-blog-link" href="/blog">博客广场</a>
           <a href="/news">&#x56e2;&#x961f;&#x65b0;&#x95fb;</a>
           <a href="/review">&#x56e2;&#x961f;&#x56de;&#x987e;</a>
           <a href="/awards">&#x5956;&#x9879;&#x8363;&#x8a89;</a>
@@ -22,19 +21,31 @@
         </nav>
     </div>
   </header>
-  <main>
-    <section id="home" class="hero home-hero">
-      <div id="heroBg" class="hero-bg"></div>
-      <div id="homePhotoWall" class="home-photo-wall" aria-hidden="true"></div>
-      <div class="hero-mask home-mask"></div>
-      <div class="hero-content home-hero-content">
-        <p class="sub">Southwest Minzu University &middot; Cyber Security Team</p>
-        <h1>Flyteam</h1>
-        <p id="heroOverview" class="desc">&#x4ee5;&#x653b;&#x9632;&#x5b9e;&#x6218;&#x4e3a;&#x6838;&#x5fc3;&#xff0c;&#x5728;&#x6301;&#x7eed;&#x63a2;&#x7d22;&#x4e2d;&#x6210;&#x957f;&#x3002;</p>
-        <div id="heroDots" class="hero-dots"></div>
+
+  <main class="section light page-main">
+    <div class="container">
+      <div class="page-title-bar">
+        <p class="sub page-sub">Flyteam</p>
+        <h2>&#x5956;&#x9879;&#x8363;&#x8a89;</h2>
+        <p class="section-sub">按团队赛与个人赛分类查看 Flyteam 的竞赛荣誉与项目成果。</p>
       </div>
-      <div class="scroll-hint">Photo wall &middot; Navigate above</div>
-    </section>
+      <div id="awardTypeSwitch" class="award-switch" role="tablist" aria-label="奖项分类筛选">
+        <button class="award-switch-card active" type="button" data-award-type="team" role="tab" aria-selected="true">
+          <span class="award-switch-kicker">Team Competition</span>
+          <strong>团队赛</strong>
+          <small>多人协作、代表团队出战的竞赛荣誉</small>
+          <em class="award-switch-count">0 项</em>
+        </button>
+        <button class="award-switch-card" type="button" data-award-type="personal" role="tab" aria-selected="false">
+          <span class="award-switch-kicker">Individual Competition</span>
+          <strong>个人赛</strong>
+          <small>成员个人能力与单项赛事成果展示</small>
+          <em class="award-switch-count">0 项</em>
+        </button>
+      </div>
+      <p id="awardTypeHint" class="award-type-hint"></p>
+      <div id="awardGrid" class="award-grid"></div>
+    </div>
   </main>
 
   <button id="chatFab" class="chat-fab" aria-label="open chat">&#x54a8;</button>
@@ -59,6 +70,7 @@
     </figure>
   </div>
 
-  <script src="/static/public.js?v=senior-role-sort-20260510"></script>
+  <script src="/static/js/page_backdrop.js"></script>
+  <script src="/static/js/public.js?v=senior-role-sort-20260510"></script>
 </body>
 </html>

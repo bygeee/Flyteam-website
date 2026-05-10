@@ -33,9 +33,9 @@
 ```bash
 go test ./...
 go build ./cmd/flyteam-server
-node --check app/static/public.js
-node --check app/static/news.js
-node --check app/static/app.js
+node --check app/static/js/public.js
+node --check app/static/js/news.js
+node --check app/static/js/app.js
 ```
 
 ## 截图/效果图
