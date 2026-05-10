@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 
 func TestCommunityFrontendAuthGate(t *testing.T) {
 	s := newDLTestServer(t)
-	s.cfg.StaticDir = filepath.Join("..", "..", "app", "static")
+	s.cfg.StaticDir = filepath.Join("..", "..", "..", "..", "app", "static")
 
 	for _, path := range []string{"/blog", "/user-login", "/user-register"} {
 		rr := dlReq(s, http.MethodGet, path, "", nil)

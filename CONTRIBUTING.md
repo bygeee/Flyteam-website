@@ -120,7 +120,7 @@ feature/community-search-notification
 feature/community-admin-moderation
 ```
 
-Go 后端已在 `cmd/flyteam-server/community_reserved.go` 预留 API，占位接口可通过 `GET /api/community/status` 查看。实际开发时，谁负责某个模块，就只实现对应模块的占位接口，并补齐权限校验和测试。
+Go 后端已在 `cmd/flyteam-server/internal/app/community_reserved.go` 预留 API，占位接口可通过 `GET /api/community/status` 查看。实际开发时，谁负责某个模块，就只实现对应模块的占位接口，并补齐权限校验和测试。
 
 ## 目录明细同步要求
 

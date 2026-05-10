@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"database/sql"
@@ -11,11 +11,11 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func openDatabase(cfg Config) (*sql.DB, error) {
-	if err := os.MkdirAll(filepath.Dir(cfg.DatabaseFile), 0755); err != nil {
+func Open(databaseFile string) (*sql.DB, error) {
+	if err := os.MkdirAll(filepath.Dir(databaseFile), 0755); err != nil {
 		return nil, err
 	}
-	dsn := cfg.DatabaseFile
+	dsn := databaseFile
 	if !strings.Contains(dsn, "?") {
 		dsn += "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)"
 	}
@@ -28,14 +28,14 @@ func openDatabase(cfg Config) (*sql.DB, error) {
 		_ = db.Close()
 		return nil, err
 	}
-	if err := initDatabaseSchema(db); err != nil {
+	if err := InitSchema(db); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
 	return db, nil
 }
 
-func initDatabaseSchema(db *sql.DB) error {
+func InitSchema(db *sql.DB) error {
 	schema := []string{
 		`CREATE TABLE IF NOT EXISTS app_kv (
 			key TEXT PRIMARY KEY,
@@ -260,26 +260,26 @@ func initDatabaseSchema(db *sql.DB) error {
 	return nil
 }
 
-func (s *Server) loadJSONFromDB(key string, dst any) bool {
-	if s.db == nil {
+func LoadJSON(db *sql.DB, key string, dst any) bool {
+	if db == nil {
 		return false
 	}
 	var raw string
-	if err := s.db.QueryRow(`SELECT value_json FROM app_kv WHERE key=?`, key).Scan(&raw); err != nil {
+	if err := db.QueryRow(`SELECT value_json FROM app_kv WHERE key=?`, key).Scan(&raw); err != nil {
 		return false
 	}
 	return json.Unmarshal([]byte(raw), dst) == nil
 }
 
-func (s *Server) saveJSONToDB(key string, data any) error {
-	if s.db == nil {
+func SaveJSON(db *sql.DB, key string, data any, updatedAt string) error {
+	if db == nil {
 		return sql.ErrConnDone
 	}
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT INTO app_kv(key,value_json,updated_at) VALUES(?,?,?)
-		ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at`, key, string(b), nowISO())
+	_, err = db.Exec(`INSERT INTO app_kv(key,value_json,updated_at) VALUES(?,?,?)
+		ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at`, key, string(b), updatedAt)
 	return err
 }

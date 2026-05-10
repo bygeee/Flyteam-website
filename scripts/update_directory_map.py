@@ -19,13 +19,16 @@ TOP_LEVEL_DESCRIPTIONS = {
     "app/static/js/": "前端交互脚本。",
     "app/static/pages/": "HTML 页面模板，由 Go 后端路由加载。",
     "archive/legacy-python/": "旧 Python 版本备份占位目录，真实备份文件默认不提交。",
-    "cmd/flyteam-server/": "Go 后端服务，包含路由、鉴权、内容管理、博客社区、RAG、上传等模块。",
+    "cmd/flyteam-server/": "Go 后端命令入口与 internal 分层代码。",
+    "cmd/flyteam-server/internal/app/": "HTTP 应用层：配置、路由、鉴权适配、官网内容、社区接口、RAG 调度与上传处理。",
+    "cmd/flyteam-server/internal/blog/": "博客领域层：文章模型、发布请求校验、标签规范化、公开响应结构。",
+    "cmd/flyteam-server/internal/database/": "数据库层：SQLite 连接、Schema 初始化、app_kv JSON 存取。",
     "docs/": "项目文档总目录。",
-    "docs/knowledge/": "本地知识库/PDF 草稿占位目录，PDF 默认不提交 Git。",
-    "docs/planning/": "规划、路线图、多人协作任务分配。",
+    "docs/knowledge/": "本地知识库 PDF 草稿占位目录，PDF 默认不提交 Git。",
+    "docs/planning/": "规划、路线图、多人成员协作任务分配。",
     "docs/reports/": "测试、安全、验收报告。",
     "scripts/": "项目维护脚本。",
-    "storage/": "运行数据目录：数据库、上传文件、RAG 索引和日志，默认不提交。",
+    "storage/": "运行数据目录：数据库、上传文件、RAG 索引和日志；公开协作时默认不建议提交。",
 }
 
 FILE_DESCRIPTIONS = {
@@ -46,10 +49,11 @@ FILE_DESCRIPTIONS = {
 BACKEND_DESCRIPTIONS = {
     "admin_blog_ops.go": "博客站管理员/超级管理员操作、用户审核、审计接口。",
     "auth.go": "宣传站管理员鉴权、会话、角色权限。",
+    "blog_model.go": "博客领域适配器，调用 internal/blog，保持原有 handler 调用不变。",
     "blog_site_state.go": "博客站开放/关闭状态与前端访问控制。",
-    "cache.go": "缓存控制与辅助逻辑。",
+    "cache.go": "数据库缓存控制与辅助逻辑。",
     "captcha.go": "招新报名动态 C 语言验证码。",
-    "community_auth.go": "社区鉴权公共逻辑。",
+    "community_auth.go": "社区鉴权公共逻辑、会话校验、CSRF 校验。",
     "community_blog.go": "博客文章发布、编辑、读取、浏览量等。",
     "community_dl_comments.go": "博客评论、点赞、收藏等互动。",
     "community_dl_groups.go": "群聊、群成员、群管理。",
@@ -61,10 +65,16 @@ BACKEND_DESCRIPTIONS = {
     "community_reserved.go": "社区预留/状态接口。",
     "content.go": "官网内容聚合、排序、奖项/前辈墙/新闻等核心内容逻辑。",
     "content_review_recruit.go": "团队回顾、相册、招新报名数据处理。",
-    "database.go": "SQLite 初始化、表结构迁移、默认账号/数据迁移。",
-    "main.go": "服务入口、配置加载、HTTP 路由、静态文件服务和安全响应头。",
+    "database.go": "数据库访问适配器，调用 internal/database。",
     "rag.go": "RAG 知识库、PDF 文本提取、向量检索、问答调用。",
+    "server.go": "服务启动、配置加载、HTTP 路由、静态文件服务和安全响应头。",
     "upload.go": "PDF、图片、头像等上传处理和文件安全校验。",
+}
+
+BACKEND_PATH_DESCRIPTIONS = {
+    "cmd/flyteam-server/main.go": "Go 命令入口，仅调用 internal/app.Run。",
+    "cmd/flyteam-server/internal/blog/blog.go": "博客领域模型、文章请求校验、标签规范化和响应转换。",
+    "cmd/flyteam-server/internal/database/database.go": "SQLite 连接、Schema 初始化、app_kv JSON 存取。",
 }
 
 FRONTEND_GROUPS = {
@@ -74,11 +84,11 @@ FRONTEND_GROUPS = {
 }
 
 RUNTIME_NOTES = [
-    (".env", "本地/服务器真实环境变量，包含密钥，禁止提交。"),
+    (".env", "本地/服务器真实环境变量，包含密钥，禁止提交到公开仓库。"),
     ("storage/flyteam.db", "SQLite 运行数据库，保存账号、内容、文章、聊天等数据。"),
     ("storage/uploads/", "后台上传图片、头像、PDF、博客图片等缓存。"),
-    ("storage/chroma/", "旧版 Chroma 向量库缓存，如存在则不提交。"),
-    ("storage/*.json", "兼容旧版 JSON 数据和迁移来源，不提交。"),
+    ("storage/chroma/", "旧版 Chroma 向量库缓存，如存在则不建议提交到公开仓库。"),
+    ("storage/*.json", "兼容旧版 JSON 数据和迁移来源，不建议提交到公开仓库。"),
     ("storage/*.log", "运行日志，不提交。"),
     (".venv/", "本地 Python 虚拟环境，不提交。"),
     ("archive/legacy-python/*.codex_backup", "旧 Python 备份文件，不提交。"),
@@ -86,17 +96,20 @@ RUNTIME_NOTES = [
 
 
 def git_tracked_files() -> list[str]:
-    # Include tracked files plus new untracked files that are not ignored, so this
-    # document can be generated before the first commit that introduces them.
+    """Return tracked + untracked-not-ignored paths using raw UTF-8 names.
+
+    `git ls-files` defaults to quoted octal escapes for non-ASCII paths on many
+    Windows installations. `core.quotePath=false` plus `-z` keeps directory maps
+    readable for uploaded Chinese filenames.
+    """
     result = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        ["git", "-c", "core.quotePath=false", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT,
         check=True,
         capture_output=True,
-        text=True,
-        encoding="utf-8",
     )
-    return sorted(line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip())
+    raw = result.stdout.decode("utf-8", errors="replace")
+    return sorted(p.replace("\\", "/") for p in raw.split("\0") if p)
 
 
 def build_tree(paths: list[str]) -> str:
@@ -140,12 +153,14 @@ def collect_rows(paths: list[str]) -> tuple[list[tuple[str, str]], list[tuple[st
     file_rows = [(p, FILE_DESCRIPTIONS[p]) for p in sorted(FILE_DESCRIPTIONS) if p in paths]
 
     backend_rows: list[tuple[str, str]] = []
+    prefix = "cmd/flyteam-server/"
     for path in paths:
-        prefix = "cmd/flyteam-server/"
         if not path.startswith(prefix) or not path.endswith(".go") or path.endswith("_test.go"):
             continue
-        name = path.removeprefix(prefix)
-        backend_rows.append((path, BACKEND_DESCRIPTIONS.get(name, "Go 后端模块。")))
+        rel = path.removeprefix(prefix)
+        basename = Path(path).name
+        desc = BACKEND_PATH_DESCRIPTIONS.get(path) or BACKEND_DESCRIPTIONS.get(rel) or BACKEND_DESCRIPTIONS.get(basename) or "Go 后端模块。"
+        backend_rows.append((path, desc))
     return top_rows, file_rows, backend_rows
 
 
@@ -155,7 +170,7 @@ def frontend_rows(paths: list[str]) -> list[tuple[str, str, str]]:
         prefix = folder + "/"
         files = [Path(p).name for p in paths if p.startswith(prefix) and not p.endswith(".gitkeep")]
         if files:
-            rows.append((folder + "/", group_name, ", ".join(files)))
+            rows.append((folder + "/", group_name, ", ".join(sorted(files, key=str.lower))))
     return rows
 
 
