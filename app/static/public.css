@@ -2180,6 +2180,74 @@ code {
   user-select: text;
 }
 
+/* Intro page responsive guard: prevent the glass text panel from covering the
+   team image/background on tablets, narrow windows and mobile screenshots. */
+.intro-page .container {
+  max-width: 1180px;
+}
+
+.intro-page .intro-wrap {
+  grid-template-columns: minmax(260px, .9fr) minmax(0, 1.35fr);
+  overflow: hidden;
+}
+
+.intro-page .intro-wrap > div,
+.intro-page .intro-side {
+  min-width: 0;
+}
+
+.intro-page .intro-side img {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(66vh, 680px);
+}
+
+.intro-page .intro-text {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: clamp(16px, 1.18vw, 18px);
+  line-height: 1.85;
+}
+
+@media (max-width: 1180px) {
+  .intro-page .intro-wrap {
+    grid-template-columns: 1fr !important;
+  }
+  .intro-page .intro-side {
+    order: -1;
+  }
+  .intro-page .intro-side img {
+    max-width: min(100%, 680px);
+    max-height: min(46vh, 520px);
+  }
+  .intro-page .intro-text {
+    font-size: clamp(15px, 3.8vw, 17px);
+    line-height: 1.78;
+  }
+}
+
+@media (max-width: 560px) {
+  .intro-page .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .module-page .intro-wrap {
+    padding: 18px 14px !important;
+    gap: 16px !important;
+    border-radius: 20px;
+  }
+  .intro-page .intro-side img {
+    max-height: 260px;
+    border-radius: 16px;
+  }
+  .intro-page .intro-text {
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0;
+  }
+}
+
 /* Homepage hero anti-overlap: keep the big Flyteam title and intro copy
    separated even in short browser windows or after page zoom. */
 .home-only .home-hero-content {
